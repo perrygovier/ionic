@@ -23,9 +23,9 @@ jobs:
         name: Create Nightly Hash
         # The date should output YYYYMMDD
         # so that it is human readable
-        run: |
-          echo "NIGHTLY_HASH=$(node ./.scripts/bump-version.js)-nightly.$(date +%Y%m%d)" >> $GITHUB_OUTPUT
-        shell: bash
+        # run: |
+        #   echo "NIGHTLY_HASH=$(node ./.scripts/bump-version.js)-nightly.$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+        # shell: bash
 
   release-ionic:
     needs: [create-nightly-hash]
