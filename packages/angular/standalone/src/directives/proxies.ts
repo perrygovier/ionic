@@ -1664,12 +1664,13 @@ export class IonRefresher {
   constructor(c: ChangeDetectorRef, r: ElementRef, protected z: NgZone) {
     c.detach();
     this.el = r.nativeElement;
-    proxyOutputs(this, this.el, ['ionRefresh', 'ionPull', 'ionStart']);
+    proxyOutputs(this, this.el, ['ionRefresh', 'ionPull', 'ionStart', 'ionPullStart', 'ionPullEnd']);
   }
 }
 
 
 import type { RefresherEventDetail as IIonRefresherRefresherEventDetail } from '@ionic/core/components';
+import type { RefresherPullEndEventDetail as IIonRefresherRefresherPullEndEventDetail } from '@ionic/core/components';
 
 export declare interface IonRefresher extends Components.IonRefresher {
   /**
@@ -1684,9 +1685,19 @@ called when the async operation has completed.
    */
   ionPull: EventEmitter<CustomEvent<void>>;
   /**
-   * Emitted when the user begins to start pulling down.
+   * Emitted when the user begins to start pulling down. @deprecated Use `ionPullStart` instead.
    */
   ionStart: EventEmitter<CustomEvent<void>>;
+  /**
+   * Emitted when the user begins to start pulling down.
+   */
+  ionPullStart: EventEmitter<CustomEvent<void>>;
+  /**
+   * Emitted when the refresher has returned to the inactive state
+after a pull gesture. This fires whether the refresh completed
+successfully or was canceled.
+   */
+  ionPullEnd: EventEmitter<CustomEvent<IIonRefresherRefresherPullEndEventDetail>>;
 }
 
 
@@ -1755,20 +1766,40 @@ export class IonReorderGroup {
   constructor(c: ChangeDetectorRef, r: ElementRef, protected z: NgZone) {
     c.detach();
     this.el = r.nativeElement;
-    proxyOutputs(this, this.el, ['ionItemReorder']);
+    proxyOutputs(this, this.el, ['ionItemReorder', 'ionReorderStart', 'ionReorderMove', 'ionReorderEnd']);
   }
 }
 
 
 import type { ItemReorderEventDetail as IIonReorderGroupItemReorderEventDetail } from '@ionic/core/components';
+import type { ReorderMoveEventDetail as IIonReorderGroupReorderMoveEventDetail } from '@ionic/core/components';
+import type { ReorderEndEventDetail as IIonReorderGroupReorderEndEventDetail } from '@ionic/core/components';
 
 export declare interface IonReorderGroup extends Components.IonReorderGroup {
   /**
-   * Event that needs to be listened to in order to complete the reorder action.
+   * Event that needs to be listened to in order to complete the reorder action. @deprecated Use `ionReorderEnd` instead. If you are accessing
+`event.detail.from` or `event.detail.to` and relying on them
+being different you should now add checks as they are always emitted
+in `ionReorderEnd`, even when they are the same.
+   */
+  ionItemReorder: EventEmitter<CustomEvent<IIonReorderGroupItemReorderEventDetail>>;
+  /**
+   * Event that is emitted when the reorder gesture starts.
+   */
+  ionReorderStart: EventEmitter<CustomEvent<void>>;
+  /**
+   * Event that is emitted as the reorder gesture moves.
+   */
+  ionReorderMove: EventEmitter<CustomEvent<IIonReorderGroupReorderMoveEventDetail>>;
+  /**
+   * Event that is emitted when the reorder gesture ends.
+The from and to properties are always available, regardless of
+if the reorder gesture moved the item. If the item did not change
+from its start position, the from and to properties will be the same.
 Once the event has been emitted, the `complete()` method then needs
 to be called in order to finalize the reorder action.
    */
-  ionItemReorder: EventEmitter<CustomEvent<IIonReorderGroupItemReorderEventDetail>>;
+  ionReorderEnd: EventEmitter<CustomEvent<IIonReorderGroupReorderEndEventDetail>>;
 }
 
 
@@ -1869,14 +1900,14 @@ export declare interface IonSegmentContent extends Components.IonSegmentContent 
 
 @ProxyCmp({
   defineCustomElementFn: defineIonSegmentView,
-  inputs: ['disabled']
+  inputs: ['disabled', 'swipeGesture']
 })
 @Component({
   selector: 'ion-segment-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<ng-content></ng-content>',
   // eslint-disable-next-line @angular-eslint/no-inputs-metadata-property
-  inputs: ['disabled'],
+  inputs: ['disabled', 'swipeGesture'],
   standalone: true
 })
 export class IonSegmentView {
@@ -1901,14 +1932,14 @@ export declare interface IonSegmentView extends Components.IonSegmentView {
 
 @ProxyCmp({
   defineCustomElementFn: defineIonSelectModal,
-  inputs: ['header', 'multiple', 'options']
+  inputs: ['cancelText', 'header', 'multiple', 'options']
 })
 @Component({
   selector: 'ion-select-modal',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<ng-content></ng-content>',
   // eslint-disable-next-line @angular-eslint/no-inputs-metadata-property
-  inputs: ['header', 'multiple', 'options'],
+  inputs: ['cancelText', 'header', 'multiple', 'options'],
   standalone: true
 })
 export class IonSelectModal {

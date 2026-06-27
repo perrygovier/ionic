@@ -40,7 +40,7 @@ comment:
 
 
         If the requested feature is something you would find useful for your applications, please react to the original post with 👍 (`+1`). If you would like to provide an additional use case for the feature, please post a comment.
-        
+
 
         The team will review this feedback and make a final decision. Any decision will be posted on this thread, but please note that we may ultimately decide not to pursue this feature.
 
@@ -54,14 +54,6 @@ closeAndLock:
       message: >
         Thanks for the issue! This issue appears to be a support request. We use this issue tracker exclusively for
         bug reports and feature requests. Please use our [forum](https://forum.ionicframework.com) for questions about the framework.
-
-
-        Thank you for using Ionic!
-    - label: "ionitron: appflow"
-      message: >
-        Thanks for the issue! This issue appears to be related to Ionic Appflow. We use this issue tracker exclusively for
-        bug reports and feature requests. Please use the [Ionic Appflow Support Forum](https://ionic.zendesk.com/hc/en-us/requests/new)
-        to report this issue.
 
 
         Thank you for using Ionic!
@@ -91,6 +83,7 @@ stale:
   exemptLabels:
     - "good first issue"
     - "triage"
+    - "bug: external"
     - "type: bug"
     - "type: feature request"
     - "needs: investigation"
@@ -141,65 +134,6 @@ noReproduction:
 
 
     Thank you for using Ionic!
-  close: true
-  lock: true
-  dryRun: false
-
-wrongRepo:
-  repos:
-    - label: "ionitron: capacitor"
-      repo: capacitor
-      message: >
-        Thanks for the issue! We use this issue tracker exclusively for bug reports and feature requests
-        associated with the Ionic Framework. It appears that this issue is associated with Capacitor.
-        I am moving this issue to the Capacitor repository. Please track this issue over there.
-
-
-        Thank you for using Ionic!
-    - label: "ionitron: v3"
-      repo: ionic-v3
-      message: >
-        Thanks for the issue! We have moved the source code and issues for Ionic 3 into a separate repository.
-        I am moving this issue to the repository for Ionic 3. Please track this issue over there.
-
-
-        Thank you for using Ionic!
-    - label: "ionitron: cli"
-      repo: ionic-cli
-      message: >
-        Thanks for the issue! We use this issue tracker exclusively for bug reports and feature requests
-        associated with the Ionic Framework. It appears that this issue is associated with the Ionic CLI.
-        I am moving this issue to the Ionic CLI repository. Please track this issue over there.
-
-
-        Thank you for using Ionic!
-    - label: "ionitron: docs"
-      repo: ionic-docs
-      message: >
-        Thanks for the issue! We use this issue tracker exclusively for bug reports and feature requests
-        associated with the Ionic Framework. It appears that this issue is associated with the Ionic Documentation.
-        I am moving this issue to the Ionic Docs repository. Please track this issue over there.
-
-
-        Thank you for using Ionic!
-    - label: "ionitron: stencil"
-      repo: stencil
-      message: >
-        Thanks for the issue! We use this issue tracker exclusively for bug reports and feature requests
-        associated with the Ionic Framework. It appears that this issue is associated with Stencil.
-        I am moving this issue to the Stencil repository. Please track this issue over there.
-
-
-        Thank you for using Ionic!
-    - label: "ionitron: native"
-      repo: ionic-native
-      message: >
-        Thanks for the issue! We use this issue tracker exclusively for bug reports and feature requests
-        associated with the Ionic Framework. It appears that this issue is associated with Ionic Native.
-        I am moving this issue to the Ionic Native repository. Please track this issue over there.
-
-
-        Thank you for using Ionic!
   close: true
   lock: true
   dryRun: false

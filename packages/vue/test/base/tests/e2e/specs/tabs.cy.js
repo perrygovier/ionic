@@ -1,4 +1,45 @@
 describe('Tabs', () => {
+  /**
+   * Verifies that tabs with similar route prefixes (e.g., /home, /home2, /home3)
+   * correctly select the matching tab instead of the first prefix match.
+   * 
+   * @see https://github.com/ionic-team/ionic-framework/issues/30448
+   */
+  describe('Similar Route Prefixes', () => {
+    it('should select the correct tab when routes have similar prefixes', () => {
+      cy.visit('/tabs-similar-prefixes/home2');
+
+      cy.get('[data-testid="home2-content"]').should('be.visible');
+      cy.get('[data-testid="home2-tab"]').should('have.class', 'tab-selected');
+      cy.get('[data-testid="home-tab"]').should('not.have.class', 'tab-selected');
+    });
+
+    it('should select the correct tab when navigating via tab buttons', () => {
+      cy.visit('/tabs-similar-prefixes/home');
+
+      cy.get('[data-testid="home-tab"]').should('have.class', 'tab-selected');
+      cy.get('[data-testid="home2-tab"]').should('not.have.class', 'tab-selected');
+
+      cy.get('[data-testid="home2-tab"]').click();
+      cy.get('[data-testid="home2-tab"]').should('have.class', 'tab-selected');
+      cy.get('[data-testid="home-tab"]').should('not.have.class', 'tab-selected');
+
+      cy.get('[data-testid="home3-tab"]').click();
+      cy.get('[data-testid="home3-tab"]').should('have.class', 'tab-selected');
+      cy.get('[data-testid="home-tab"]').should('not.have.class', 'tab-selected');
+      cy.get('[data-testid="home2-tab"]').should('not.have.class', 'tab-selected');
+    });
+
+    it('should select the correct tab when directly navigating to home3', () => {
+      cy.visit('/tabs-similar-prefixes/home3');
+
+      cy.get('[data-testid="home3-content"]').should('be.visible');
+      cy.get('[data-testid="home3-tab"]').should('have.class', 'tab-selected');
+      cy.get('[data-testid="home-tab"]').should('not.have.class', 'tab-selected');
+      cy.get('[data-testid="home2-tab"]').should('not.have.class', 'tab-selected');
+    });
+  });
+
   describe('With IonRouterOutlet', () => {
     it('should go back from child pages', () => {
       cy.visit('/tabs');
@@ -125,14 +166,14 @@ describe('Tabs', () => {
       cy.visit('/')
       cy.ionPageVisible('home');
 
-      cy.get('#tabs').click();
+      cy.get('#tabs').click({ force: true });
       cy.ionPageVisible('tab1');
       cy.ionPageHidden('home');
 
       cy.ionBackClick('tab1');
       cy.ionPageDoesNotExist('tabs');
 
-      cy.get('#tabs').click();
+      cy.get('#tabs').click({ force: true });
       cy.ionPageVisible('tab1');
       cy.ionPageHidden('home');
 
@@ -144,7 +185,7 @@ describe('Tabs', () => {
       cy.visit('/');
       cy.ionPageVisible('home');
 
-      cy.get('#tabs').click();
+      cy.get('#tabs').click({ force: true });
       cy.ionPageVisible('tab1');
 
       cy.get('ion-tab-button#tab-button-tab2').click();
@@ -159,7 +200,7 @@ describe('Tabs', () => {
       cy.visit('/');
       cy.ionPageVisible('home');
 
-      cy.get('#tabs').click();
+      cy.get('#tabs').click({ force: true });
       cy.ionPageVisible('tab1');
 
       cy.get('ion-tab-button#tab-button-tab2').click();
@@ -169,7 +210,7 @@ describe('Tabs', () => {
       cy.ionPageVisible('home')
       cy.ionPageDoesNotExist('tabs');
 
-      cy.get('#tabs').click();
+      cy.get('#tabs').click({ force: true });
       cy.ionPageVisible('tab1');
 
       cy.get('ion-tab-button#tab-button-tab2').click();
@@ -639,7 +680,7 @@ describe('Tabs', () => {
       cy.viewport(320, 568);
       cy.visit('?ionic:mode=ios');
       cy.ionPageVisible('home');
-      cy.get('#tabs').click();
+      cy.get('#tabs').click({ force: true });
       cy.ionPageHidden('home');
       cy.ionPageVisible('tab1')
     });

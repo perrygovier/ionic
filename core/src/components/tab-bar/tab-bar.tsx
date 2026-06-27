@@ -22,6 +22,8 @@ import type { TabBarChangedEventDetail } from './tab-bar-interface';
 })
 export class TabBar implements ComponentInterface {
   private keyboardCtrl: KeyboardController | null = null;
+  private keyboardCtrlPromise: Promise<KeyboardController> | null = null;
+  private didLoad = false;
 
   @Element() el!: HTMLElement;
 
@@ -40,6 +42,12 @@ export class TabBar implements ComponentInterface {
   @Prop() selectedTab?: string;
   @Watch('selectedTab')
   selectedTabChanged() {
+    // Skip the initial watcher call that happens during component load
+    // We handle that in componentDidLoad to ensure children are ready
+    if (!this.didLoad) {
+      return;
+    }
+
     if (this.selectedTab !== undefined) {
       this.ionTabBarChanged.emit({
         tab: this.selectedTab,
@@ -65,12 +73,23 @@ export class TabBar implements ComponentInterface {
    */
   @Event() ionTabBarLoaded!: EventEmitter<void>;
 
-  componentWillLoad() {
-    this.selectedTabChanged();
+  componentDidLoad() {
+    this.ionTabBarLoaded.emit();
+    // Set the flag to indicate the component has loaded
+    // This allows the watcher to emit changes from this point forward
+    this.didLoad = true;
+
+    // Emit the initial selected tab after the component is fully loaded
+    // This ensures all child components (ion-tab-button) are ready
+    if (this.selectedTab !== undefined) {
+      this.ionTabBarChanged.emit({
+        tab: this.selectedTab,
+      });
+    }
   }
 
   async connectedCallback() {
-    this.keyboardCtrl = await createKeyboardController(async (keyboardOpen, waitForResize) => {
+    const promise = createKeyboardController(async (keyboardOpen, waitForResize) => {
       /**
        * If the keyboard is hiding, then we need to wait
        * for the webview to resize. Otherwise, the tab bar
@@ -82,16 +101,33 @@ export class TabBar implements ComponentInterface {
 
       this.keyboardVisible = keyboardOpen; // trigger re-render by updating state
     });
-  }
+    this.keyboardCtrlPromise = promise;
 
-  disconnectedCallback() {
-    if (this.keyboardCtrl) {
-      this.keyboardCtrl.destroy();
+    const keyboardCtrl = await promise;
+
+    /**
+     * Only assign if this is still the current promise.
+     * Otherwise, a new connectedCallback has started or
+     * disconnectedCallback was called, so destroy this instance.
+     */
+    if (this.keyboardCtrlPromise === promise) {
+      this.keyboardCtrl = keyboardCtrl;
+      this.keyboardCtrlPromise = null;
+    } else {
+      keyboardCtrl.destroy();
     }
   }
 
-  componentDidLoad() {
-    this.ionTabBarLoaded.emit();
+  disconnectedCallback() {
+    if (this.keyboardCtrlPromise) {
+      this.keyboardCtrlPromise.then((ctrl) => ctrl.destroy());
+      this.keyboardCtrlPromise = null;
+    }
+
+    if (this.keyboardCtrl) {
+      this.keyboardCtrl.destroy();
+      this.keyboardCtrl = null;
+    }
   }
 
   render() {

@@ -18,6 +18,8 @@ import type { RouterDirection } from '../router/utils/interface';
  * @slot end - Content is placed to the right of the item text in LTR, and to the left in RTL.
  *
  * @part native - The native HTML button, anchor or div element that wraps all child elements.
+ * @part inner - The inner wrapper element that arranges the item content.
+ * @part container - The wrapper element that contains the default slot.
  * @part detail-icon - The chevron icon for the item. Only applies when `detail="true"`.
  */
 @Component({
@@ -37,6 +39,7 @@ export class Item implements ComponentInterface, AnchorInterface, ButtonInterfac
 
   @State() multipleInputs = false;
   @State() focusable = true;
+  @State() isInteractive = false;
 
   /**
    * The color to use from your application's color palette.
@@ -172,14 +175,12 @@ export class Item implements ComponentInterface, AnchorInterface, ButtonInterfac
   componentDidLoad() {
     raf(() => {
       this.setMultipleInputs();
+      this.setIsInteractive();
       this.focusable = this.isFocusable();
     });
   }
 
-  // If the item contains multiple clickable elements and/or inputs, then the item
-  // should not have a clickable input cover over the entire item to prevent
-  // interfering with their individual click events
-  private setMultipleInputs() {
+  private totalNestedInputs() {
     // The following elements have a clickable cover that is relative to the entire item
     const covers = this.el.querySelectorAll('ion-checkbox, ion-datetime, ion-select, ion-radio');
 
@@ -193,6 +194,19 @@ export class Item implements ComponentInterface, AnchorInterface, ButtonInterfac
     // The following elements should also stay clickable when an input with cover is present
     const clickables = this.el.querySelectorAll('ion-router-link, ion-button, a, button');
 
+    return {
+      covers,
+      inputs,
+      clickables,
+    };
+  }
+
+  // If the item contains multiple clickable elements and/or inputs, then the item
+  // should not have a clickable input cover over the entire item to prevent
+  // interfering with their individual click events
+  private setMultipleInputs() {
+    const { covers, inputs, clickables } = this.totalNestedInputs();
+
     // Check for multiple inputs to change the position of the input cover to relative
     // for all of the covered inputs above
     this.multipleInputs =
@@ -200,6 +214,19 @@ export class Item implements ComponentInterface, AnchorInterface, ButtonInterfac
       covers.length + clickables.length > 1 ||
       (covers.length > 0 && this.isClickable());
   }
+
+  private setIsInteractive() {
+    // If item contains any interactive children, set isInteractive to `true`
+    const { covers, inputs, clickables } = this.totalNestedInputs();
+
+    this.isInteractive = covers.length > 0 || inputs.length > 0 || clickables.length > 0;
+  }
+
+  // slot change listener updates state to reflect how/if item should be interactive
+  private updateInteractivityOnSlotChange = () => {
+    this.setIsInteractive();
+    this.setMultipleInputs();
+  };
 
   // If the item contains an input including a checkbox, datetime, select, or radio
   // then the item will have a clickable input cover that covers the item
@@ -364,12 +391,12 @@ export class Item implements ComponentInterface, AnchorInterface, ButtonInterfac
           disabled={disabled}
           {...clickFn}
         >
-          <slot name="start"></slot>
-          <div class="item-inner">
-            <div class="input-wrapper">
-              <slot></slot>
+          <slot name="start" onSlotchange={this.updateInteractivityOnSlotChange}></slot>
+          <div class="item-inner" part="inner">
+            <div class="input-wrapper" part="container">
+              <slot onSlotchange={this.updateInteractivityOnSlotChange}></slot>
             </div>
-            <slot name="end"></slot>
+            <slot name="end" onSlotchange={this.updateInteractivityOnSlotChange}></slot>
             {showDetail && (
               <ion-icon
                 icon={detailIcon}

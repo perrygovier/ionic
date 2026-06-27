@@ -170,6 +170,7 @@ export class Button implements ComponentInterface, AnchorInterface, ButtonInterf
    */
   @Watch('aria-checked')
   @Watch('aria-label')
+  @Watch('aria-pressed')
   onAriaChanged(newValue: string, _oldValue: string, propName: string) {
     this.inheritedAttributes = {
       ...this.inheritedAttributes,
@@ -194,9 +195,13 @@ export class Button implements ComponentInterface, AnchorInterface, ButtonInterf
 
       /**
        * If the form already has a rendered form button
-       * then do not append a new one again.
+       * then do not append a new one again. Sync the
+       * disabled state and type if it changes after button
+       * creation (e.g., runtime property updates).
        */
       if (formButtonEl !== null && formEl.contains(formButtonEl)) {
+        formButtonEl.disabled = this.disabled;
+        formButtonEl.type = this.type;
         return;
       }
 
@@ -361,11 +366,7 @@ export class Button implements ComponentInterface, AnchorInterface, ButtonInterf
             target,
           };
     let fill = this.fill;
-    /**
-     * We check both undefined and null to
-     * work around https://github.com/ionic-team/stencil/issues/3586.
-     */
-    if (fill == null) {
+    if (fill === undefined) {
       fill = this.inToolbar || this.inListHeader ? 'clear' : 'solid';
     }
 

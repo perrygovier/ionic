@@ -3,6 +3,286 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [8.8.12](https://github.com/ionic-team/ionic-framework/compare/v8.8.11...v8.8.12) (2026-06-24)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.11](https://github.com/ionic-team/ionic-framework/compare/v8.8.10...v8.8.11) (2026-06-17)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.10](https://github.com/ionic-team/ionic-framework/compare/v8.8.9...v8.8.10) (2026-06-10)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.9](https://github.com/ionic-team/ionic-framework/compare/v8.8.8...v8.8.9) (2026-06-03)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.8](https://github.com/ionic-team/ionic-framework/compare/v8.8.7...v8.8.8) (2026-05-20)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.7](https://github.com/ionic-team/ionic-framework/compare/v8.8.6...v8.8.7) (2026-05-13)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.6](https://github.com/ionic-team/ionic-framework/compare/v8.8.5...v8.8.6) (2026-05-06)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.5](https://github.com/ionic-team/ionic-framework/compare/v8.8.4...v8.8.5) (2026-04-29)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.4](https://github.com/ionic-team/ionic-framework/compare/v8.8.3...v8.8.4) (2026-04-15)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.3](https://github.com/ionic-team/ionic-framework/compare/v8.8.2...v8.8.3) (2026-04-01)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.2](https://github.com/ionic-team/ionic-framework/compare/v8.8.1...v8.8.2) (2026-03-25)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.8.1](https://github.com/ionic-team/ionic-framework/compare/v8.8.0...v8.8.1) (2026-03-06)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+# [8.8.0](https://github.com/ionic-team/ionic-framework/compare/v8.7.18...v8.8.0) (2026-03-04)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.18](https://github.com/ionic-team/ionic-framework/compare/v8.7.17...v8.7.18) (2026-02-25)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.17](https://github.com/ionic-team/ionic-framework/compare/v8.7.15...v8.7.17) (2026-01-14)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.16](https://github.com/ionic-team/ionic-framework/compare/v8.7.15...v8.7.16) (2025-12-31)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.15](https://github.com/ionic-team/ionic-framework/compare/v8.7.14...v8.7.15) (2025-12-23)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.14](https://github.com/ionic-team/ionic-framework/compare/v8.7.13...v8.7.14) (2025-12-17)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.13](https://github.com/ionic-team/ionic-framework/compare/v8.7.12...v8.7.13) (2025-12-13)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.12](https://github.com/ionic-team/ionic-framework/compare/v8.7.11...v8.7.12) (2025-12-10)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.11](https://github.com/ionic-team/ionic-framework/compare/v8.7.10...v8.7.11) (2025-11-26)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.10](https://github.com/ionic-team/ionic-framework/compare/v8.7.9...v8.7.10) (2025-11-19)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.9](https://github.com/ionic-team/ionic-framework/compare/v8.7.8...v8.7.9) (2025-11-05)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.8](https://github.com/ionic-team/ionic-framework/compare/v8.7.7...v8.7.8) (2025-10-29)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.7](https://github.com/ionic-team/ionic-framework/compare/v8.7.6...v8.7.7) (2025-10-15)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.6](https://github.com/ionic-team/ionic-framework/compare/v8.7.5...v8.7.6) (2025-10-08)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.5](https://github.com/ionic-team/ionic-framework/compare/v8.7.4...v8.7.5) (2025-09-24)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.4](https://github.com/ionic-team/ionic-framework/compare/v8.7.3...v8.7.4) (2025-09-17)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.3](https://github.com/ionic-team/ionic-framework/compare/v8.7.2...v8.7.3) (2025-08-20)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.2](https://github.com/ionic-team/ionic-framework/compare/v8.7.1...v8.7.2) (2025-08-06)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.7.1](https://github.com/ionic-team/ionic-framework/compare/v8.7.0...v8.7.1) (2025-07-31)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+# [8.7.0](https://github.com/ionic-team/ionic-framework/compare/v8.6.7...v8.7.0) (2025-07-30)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.6.7](https://github.com/ionic-team/ionic-framework/compare/v8.6.6...v8.6.7) (2025-07-30)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.6.6](https://github.com/ionic-team/ionic-framework/compare/v8.6.5...v8.6.6) (2025-07-30)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
+## [8.6.5](https://github.com/ionic-team/ionic-framework/compare/v8.6.4...v8.6.5) (2025-07-16)
+
+**Note:** Version bump only for package @ionic/docs
+
+
+
+
+
 ## [8.6.4](https://github.com/ionic-team/ionic-framework/compare/v8.6.3...v8.6.4) (2025-07-09)
 
 **Note:** Version bump only for package @ionic/docs

@@ -188,6 +188,11 @@ export class Content implements ComponentInterface {
       this.tabsElement = null;
       this.tabsLoadCallback = undefined;
     }
+
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+      this.resizeTimeout = null;
+    }
   }
 
   /**
@@ -252,6 +257,17 @@ export class Content implements ComponentInterface {
         forceUpdate(this);
       }
     }
+  }
+
+  /**
+   * Recalculate content dimensions. Called by overlays (e.g., popover) when
+   * sibling elements like headers or footers have finished rendering and their
+   * heights are available, ensuring accurate offset-top calculations.
+   * @internal
+   */
+  @Method()
+  async recalculateDimensions(): Promise<void> {
+    readTask(() => this.readDimensions());
   }
 
   private readDimensions() {
@@ -451,6 +467,7 @@ export class Content implements ComponentInterface {
         role={isMainContent ? 'main' : undefined}
         class={createColorClasses(this.color, {
           [mode]: true,
+          'content-fullscreen': this.fullscreen,
           'content-sizing': hostContext('ion-popover', this.el),
           overscroll: forceOverscroll,
           [`content-${rtl}`]: true,

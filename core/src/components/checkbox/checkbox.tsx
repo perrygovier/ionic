@@ -1,5 +1,6 @@
 import type { ComponentInterface, EventEmitter } from '@stencil/core';
-import { Component, Element, Event, Host, Method, Prop, h } from '@stencil/core';
+import { Build, Component, Element, Event, Host, Method, Prop, State, h } from '@stencil/core';
+import { checkInvalidState } from '@utils/forms';
 import type { Attributes } from '@utils/helpers';
 import { inheritAriaAttributes, renderHiddenInput } from '@utils/helpers';
 import { createColorClasses, hostContext } from '@utils/theme';
@@ -34,8 +35,8 @@ export class Checkbox implements ComponentInterface {
   private inputLabelId = `${this.inputId}-lbl`;
   private helperTextId = `${this.inputId}-helper-text`;
   private errorTextId = `${this.inputId}-error-text`;
-  private focusEl?: HTMLElement;
   private inheritedAttributes: Attributes = {};
+  private validationObserver?: MutationObserver;
 
   @Element() el!: HTMLIonCheckboxElement;
 
@@ -122,6 +123,15 @@ export class Checkbox implements ComponentInterface {
   @Prop() required = false;
 
   /**
+   * Track validation state for proper aria-live announcements.
+   */
+  @State() isInvalid = false;
+
+  @State() private hasLabelContent = false;
+
+  @State() private hintTextId?: string;
+
+  /**
    * Emitted when the checked property has changed as a result of a user action such as a click.
    *
    * This event will not emit when programmatically setting the `checked` property.
@@ -138,18 +148,79 @@ export class Checkbox implements ComponentInterface {
    */
   @Event() ionBlur!: EventEmitter<void>;
 
+  connectedCallback() {
+    const { el } = this;
+
+    if (Build.isBrowser && typeof MutationObserver !== 'undefined') {
+      this.validationObserver = new MutationObserver((mutations) => {
+        // Watch for label content changes
+        if (mutations.some((mutation) => mutation.type === 'characterData' || mutation.type === 'childList')) {
+          this.hasLabelContent = this.el.textContent !== '';
+        }
+        // Watch for class changes to update validation state.
+        if (mutations.some((mutation) => mutation.type === 'attributes' && mutation.target === el)) {
+          const newIsInvalid = checkInvalidState(el);
+          if (this.isInvalid !== newIsInvalid) {
+            this.isInvalid = newIsInvalid;
+            /**
+             * Screen readers tend to announce changes
+             * to `aria-describedby` when the attribute
+             * is changed during a blur event for a
+             * native form control.
+             * However, the announcement can be spotty
+             * when using a non-native form control
+             * and `forceUpdate()`.
+             * This is due to `forceUpdate()` internally
+             * rescheduling the DOM update to a lower
+             * priority queue regardless if it's called
+             * inside a Promise or not, thus causing
+             * the screen reader to potentially miss the
+             * change.
+             * By using a State variable inside a Promise,
+             * it guarantees a re-render immediately at
+             * a higher priority.
+             */
+            Promise.resolve().then(() => {
+              this.hintTextId = this.getHintTextId();
+            });
+          }
+        }
+      });
+
+      this.validationObserver.observe(el, {
+        attributes: true,
+        attributeFilter: ['class'],
+        characterData: true,
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    // Always set initial state
+    this.isInvalid = checkInvalidState(el);
+    this.hasLabelContent = this.el.textContent !== '';
+  }
+
   componentWillLoad() {
     this.inheritedAttributes = {
       ...inheritAriaAttributes(this.el),
     };
+
+    this.hintTextId = this.getHintTextId();
+  }
+
+  disconnectedCallback() {
+    // Clean up validation observer to prevent memory leaks.
+    if (this.validationObserver) {
+      this.validationObserver.disconnect();
+      this.validationObserver = undefined;
+    }
   }
 
   /** @internal */
   @Method()
   async setFocus() {
-    if (this.focusEl) {
-      this.focusEl.focus();
-    }
+    this.el.focus();
   }
 
   /**
@@ -169,7 +240,6 @@ export class Checkbox implements ComponentInterface {
   private toggleChecked = (ev: Event) => {
     ev.preventDefault();
 
-    this.setFocus();
     this.setChecked(!this.checked);
     this.indeterminate = false;
   };
@@ -207,10 +277,10 @@ export class Checkbox implements ComponentInterface {
     ev.stopPropagation();
   };
 
-  private getHintTextID(): string | undefined {
-    const { el, helperText, errorText, helperTextId, errorTextId } = this;
+  private getHintTextId(): string | undefined {
+    const { helperText, errorText, helperTextId, errorTextId, isInvalid } = this;
 
-    if (el.classList.contains('ion-touched') && el.classList.contains('ion-invalid') && errorText) {
+    if (isInvalid && errorText) {
       return errorTextId;
     }
 
@@ -226,7 +296,7 @@ export class Checkbox implements ComponentInterface {
    * This element should only be rendered if hint text is set.
    */
   private renderHintText() {
-    const { helperText, errorText, helperTextId, errorTextId } = this;
+    const { helperText, errorText, helperTextId, errorTextId, isInvalid } = this;
 
     /**
      * undefined and empty string values should
@@ -239,11 +309,11 @@ export class Checkbox implements ComponentInterface {
 
     return (
       <div class="checkbox-bottom">
-        <div id={helperTextId} class="helper-text" part="supporting-text helper-text">
-          {helperText}
+        <div id={helperTextId} class="helper-text" part="supporting-text helper-text" aria-live="polite">
+          {!isInvalid ? helperText : null}
         </div>
-        <div id={errorTextId} class="error-text" part="supporting-text error-text">
-          {errorText}
+        <div id={errorTextId} class="error-text" part="supporting-text error-text" role="alert">
+          {isInvalid ? errorText : null}
         </div>
       </div>
     );
@@ -268,7 +338,6 @@ export class Checkbox implements ComponentInterface {
     } = this;
     const mode = getIonMode(this);
     const path = getSVGPath(mode, indeterminate);
-    const hasLabelContent = el.textContent !== '';
 
     renderHiddenInput(true, el, name, checked ? value : '', disabled);
 
@@ -278,13 +347,17 @@ export class Checkbox implements ComponentInterface {
       <Host
         role="checkbox"
         aria-checked={indeterminate ? 'mixed' : `${checked}`}
-        aria-describedby={this.getHintTextID()}
-        aria-invalid={this.getHintTextID() === this.errorTextId}
-        aria-labelledby={hasLabelContent ? this.inputLabelId : null}
+        aria-describedby={this.hintTextId}
+        aria-invalid={this.isInvalid ? 'true' : undefined}
+        aria-labelledby={this.hasLabelContent ? this.inputLabelId : null}
         aria-label={inheritedAttributes['aria-label'] || null}
         aria-disabled={disabled ? 'true' : null}
+        aria-required={required ? 'true' : undefined}
         tabindex={disabled ? undefined : 0}
         onKeyDown={this.onKeyDown}
+        onFocus={this.onFocus}
+        onBlur={this.onBlur}
+        onClick={this.onClick}
         class={createColorClasses(color, {
           [mode]: true,
           'in-item': hostContext('ion-item', el),
@@ -296,7 +369,6 @@ export class Checkbox implements ComponentInterface {
           [`checkbox-alignment-${alignment}`]: alignment !== undefined,
           [`checkbox-label-placement-${labelPlacement}`]: true,
         })}
-        onClick={this.onClick}
       >
         <label class="checkbox-wrapper" htmlFor={inputId}>
           {/*
@@ -309,16 +381,13 @@ export class Checkbox implements ComponentInterface {
             disabled={disabled}
             id={inputId}
             onChange={this.toggleChecked}
-            onFocus={() => this.onFocus()}
-            onBlur={() => this.onBlur()}
-            ref={(focusEl) => (this.focusEl = focusEl)}
             required={required}
             {...inheritedAttributes}
           />
           <div
             class={{
               'label-text-wrapper': true,
-              'label-text-wrapper-hidden': !hasLabelContent,
+              'label-text-wrapper-hidden': !this.hasLabelContent,
             }}
             part="label"
             id={this.inputLabelId}
@@ -328,7 +397,7 @@ export class Checkbox implements ComponentInterface {
             {this.renderHintText()}
           </div>
           <div class="native-wrapper">
-            <svg class="checkbox-icon" viewBox="0 0 24 24" part="container">
+            <svg class="checkbox-icon" viewBox="0 0 24 24" part="container" aria-hidden="true">
               {path}
             </svg>
           </div>

@@ -1,9 +1,5 @@
-import type { AnimationBuilder, ComponentProps } from '../../../interface';
+import type { AnimationBuilder, ComponentProps, HTMLStencilElement } from '../../../interface';
 import type { NavigationHookCallback } from '../../route/route-interface';
-
-export interface HTMLStencilElement extends HTMLElement {
-  componentOnReady(): Promise<this>;
-}
 
 export interface NavOutlet {
   setRouteId(
@@ -61,6 +57,8 @@ export interface ParsedRoute {
   segments: string[];
   /** Unparsed query string. */
   queryString?: string;
+  /** URL fragment (the part after `#`), without the leading `#`. */
+  fragment?: string;
 }
 
 export type RouterDirection = 'forward' | 'back' | 'root';

@@ -27,6 +27,9 @@ import Main from './pages/Main';
 import Tabs from './pages/Tabs';
 import TabsBasic from './pages/TabsBasic';
 import NavComponent from './pages/navigation/NavComponent';
+import NavModalComponent from './pages/navigation/NavModalComponent';
+import TabsDirectNavigation from './pages/TabsDirectNavigation';
+import TabsSimilarPrefixes from './pages/TabsSimilarPrefixes';
 import IonModalConditional from './pages/overlay-components/IonModalConditional';
 import IonModalConditionalSibling from './pages/overlay-components/IonModalConditionalSibling';
 import IonModalDatetimeButton from './pages/overlay-components/IonModalDatetimeButton';
@@ -35,14 +38,17 @@ import IonPopoverNested from './pages/overlay-components/IonPopoverNested';
 import KeepContentsMounted from './pages/overlay-components/KeepContentsMounted';
 import OverlayComponents from './pages/overlay-components/OverlayComponents';
 import OverlayHooks from './pages/overlay-hooks/OverlayHooks';
+import ReorderGroup from './pages/ReorderGroup';
+import AccordionGroup from './pages/AccordionGroup';
 
 setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <IonReactRouter>
+    {/* Vercel previews serve this app under /react/, so derive basename from Vite's base URL */}
+    <IonReactRouter basename={import.meta.env?.BASE_URL?.replace(/\/$/, '') || undefined}>
       <IonRouterOutlet>
-        <Route path="/" component={Main} />
+        <Route exact path="/" component={Main} />
         <Route path="/overlay-hooks" component={OverlayHooks} />
         <Route path="/overlay-components" component={OverlayComponents} />
         <Route path="/overlay-components/nested-popover" component={IonPopoverNested} />
@@ -61,10 +67,15 @@ const App: React.FC = () => (
         />
         <Route path="/keep-contents-mounted" component={KeepContentsMounted} />
         <Route path="/navigation" component={NavComponent} />
+        <Route path="/navigation-modal" component={NavModalComponent} />
         <Route path="/tabs" component={Tabs} />
         <Route path="/tabs-basic" component={TabsBasic} />
+        <Route path="/tabs-direct-navigation" component={TabsDirectNavigation} />
+        <Route path="/tabs-similar-prefixes" component={TabsSimilarPrefixes} />
         <Route path="/icons" component={Icons} />
         <Route path="/inputs" component={Inputs} />
+        <Route path="/reorder-group" component={ReorderGroup} />
+        <Route path="/accordion-group" component={AccordionGroup} />
       </IonRouterOutlet>
     </IonReactRouter>
   </IonApp>

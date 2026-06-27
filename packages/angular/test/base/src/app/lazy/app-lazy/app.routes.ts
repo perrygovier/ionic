@@ -33,8 +33,11 @@ export const routes: Routes = [
       { path: 'textarea', loadChildren: () => import('../textarea/textarea.module').then(m => m.TextareaModule) },
       { path: 'searchbar', loadChildren: () => import('../searchbar/searchbar.module').then(m => m.SearchbarModule) },
       { path: 'form', component: FormComponent },
+      { path: 'template-form', loadChildren: () => import('../template-form/template-form.module').then(m => m.TemplateFormModule) },
       { path: 'modals', component: ModalComponent },
       { path: 'modal-inline', loadChildren: () => import('../modal-inline').then(m => m.ModalInlineModule) },
+      { path: 'modal-sheet-inline', loadChildren: () => import('../modal-sheet-inline').then(m => m.ModalSheetInlineModule) },
+      { path: 'modal-dynamic-wrapper', loadChildren: () => import('../modal-dynamic-wrapper').then(m => m.ModalDynamicWrapperModule) },
       { path: 'view-child', component: ViewChildComponent },
       { path: 'keep-contents-mounted', loadChildren: () => import('../keep-contents-mounted').then(m => m.OverlayAutoMountModule) },
       { path: 'overlays-inline', loadChildren: () => import('../overlays-inline').then(m => m.OverlaysInlineModule) },
@@ -88,4 +91,3 @@ export const routes: Routes = [
     ]
   },
 ];
-

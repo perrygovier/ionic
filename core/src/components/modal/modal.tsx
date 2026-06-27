@@ -43,7 +43,16 @@ import { mdLeaveAnimation } from './animations/md.leave';
 import type { MoveSheetToBreakpointOptions } from './gestures/sheet';
 import { createSheetGesture } from './gestures/sheet';
 import { createSwipeToCloseGesture, SwipeToCloseDefaults } from './gestures/swipe-to-close';
-import type { ModalBreakpointChangeEventDetail, ModalHandleBehavior } from './modal-interface';
+import type { ModalBreakpointChangeEventDetail, ModalHandleBehavior, ModalDragEventDetail } from './modal-interface';
+import {
+  getInitialSafeAreaConfig,
+  getPositionBasedSafeAreaConfig,
+  applySafeAreaOverrides,
+  clearSafeAreaOverrides,
+  getRootSafeAreaTop,
+  hasCustomModalDimensions,
+  type ModalSafeAreaContext,
+} from './safe-area-utils';
 import { setCardStatusBarDark, setCardStatusBarDefault } from './utils';
 
 // TODO(FW-2832): types
@@ -71,7 +80,12 @@ export class Modal implements ComponentInterface, OverlayInterface {
   private gesture?: Gesture;
   private coreDelegate: FrameworkDelegate = CoreDelegate();
   private sheetTransition?: Promise<any>;
-  private isSheetModal = false;
+  @State() private isSheetModal = false;
+  /**
+   * The breakpoint value that has been committed for a sheet modal.
+   * This represents the modal's resting state when it is not being dragged
+   * or animating toward a new position.
+   */
   private currentBreakpoint?: number;
   private wrapperEl?: HTMLElement;
   private backdropEl?: HTMLIonBackdropElement;
@@ -100,6 +114,8 @@ export class Modal implements ComponentInterface, OverlayInterface {
   private parentRemovalObserver?: MutationObserver;
   // Cached original parent from before modal is moved to body during presentation
   private cachedOriginalParent?: HTMLElement;
+  // Cached ion-page ancestor for child route passthrough
+  private cachedPageParent?: HTMLElement | null;
 
   lastFocus?: HTMLElement;
   animation?: Animation;
@@ -274,14 +290,33 @@ export class Modal implements ComponentInterface, OverlayInterface {
 
   @Listen('resize', { target: 'window' })
   onWindowResize() {
-    // Only handle resize for iOS card modals when no custom animations are provided
-    if (getIonMode(this) !== 'ios' || !this.presentingElement || this.enterAnimation || this.leaveAnimation) {
-      return;
-    }
+    if (!this.presented) return;
 
     clearTimeout(this.resizeTimeout);
     this.resizeTimeout = setTimeout(() => {
-      this.handleViewTransition();
+      const context = this.getSafeAreaContext();
+
+      // iOS card modals: handle portrait/landscape view transitions
+      if (context.isCardModal && !this.enterAnimation && !this.leaveAnimation) {
+        this.handleViewTransition();
+      }
+
+      // Sheet modals: re-compute the internal offset property since safe-area
+      // values may change on device rotation (e.g., portrait notch vs landscape).
+      if (context.isSheetModal) {
+        this.updateSheetOffsetTop();
+      }
+
+      // Regular (non-sheet, non-card) modals: update safe-area overrides
+      // since the viewport may have crossed the centered-dialog breakpoint.
+      if (!context.isSheetModal && !context.isCardModal) {
+        this.updateSafeAreaOverrides();
+
+        // Re-evaluate fullscreen safe-area padding: clear first, then re-apply.
+        const { contentEl, hasFooter } = this.findContentAndFooter();
+        this.clearContentSafeAreaPadding(contentEl);
+        this.applyFullscreenSafeAreaTo(contentEl, hasFooter);
+      }
     }, 50); // Debounce to avoid excessive calls during active resizing
   }
 
@@ -388,6 +423,22 @@ export class Modal implements ComponentInterface, OverlayInterface {
    */
   @Event() ionMount!: EventEmitter<void>;
 
+  /**
+   * Event that is emitted when the sheet modal or card modal gesture starts.
+   */
+  @Event() ionDragStart!: EventEmitter<void>;
+
+  /**
+   * Event that is emitted when the sheet modal or card modal gesture moves.
+   */
+  @Event() ionDragMove!: EventEmitter<ModalDragEventDetail>;
+
+  /**
+   * Event that is emitted when the sheet modal or card modal gesture ends.
+   */
+  @Event() ionDragEnd!: EventEmitter<ModalDragEventDetail>;
+
+  @Watch('breakpoints')
   breakpointsChanged(breakpoints: number[] | undefined) {
     if (breakpoints !== undefined) {
       this.sortedBreakpoints = breakpoints.sort((a, b) => a - b);
@@ -404,6 +455,9 @@ export class Modal implements ComponentInterface, OverlayInterface {
     this.triggerController.removeClickListener();
     this.cleanupViewTransitionListener();
     this.cleanupParentRemovalObserver();
+    // Also called in dismiss() — intentional dual cleanup covers both
+    // dismiss-then-remove and direct DOM removal without dismiss.
+    this.cleanupSafeAreaOverrides();
   }
 
   componentWillLoad() {
@@ -592,6 +646,13 @@ export class Modal implements ComponentInterface, OverlayInterface {
 
     writeTask(() => this.el.classList.add('show-modal'));
 
+    // Recalculate isSheetModal before safe-area setup because framework
+    // bindings (e.g., Angular) may not have been applied when componentWillLoad ran.
+    this.isSheetModal = this.breakpoints !== undefined && this.initialBreakpoint !== undefined;
+
+    // Set initial safe-area overrides before animation
+    this.setInitialSafeAreaOverrides();
+
     const hasCardModal = presentingElement !== undefined;
 
     /**
@@ -611,6 +672,12 @@ export class Modal implements ComponentInterface, OverlayInterface {
       backdropBreakpoint: this.backdropBreakpoint,
       expandToScroll: this.expandToScroll,
     });
+
+    // Update safe-area based on actual position after animation
+    this.updateSafeAreaOverrides();
+
+    // Apply fullscreen safe-area padding if needed
+    this.applyFullscreenSafeArea();
 
     /* tslint:disable-next-line */
     if (typeof window !== 'undefined') {
@@ -683,33 +750,15 @@ export class Modal implements ComponentInterface, OverlayInterface {
 
     const statusBarStyle = this.statusBarStyle ?? StatusBarStyle.Default;
 
-    this.gesture = createSwipeToCloseGesture(el, ani, statusBarStyle, () => {
-      /**
-       * While the gesture animation is finishing
-       * it is possible for a user to tap the backdrop.
-       * This would result in the dismiss animation
-       * being played again. Typically this is avoided
-       * by setting `presented = false` on the overlay
-       * component; however, we cannot do that here as
-       * that would prevent the element from being
-       * removed from the DOM.
-       */
-      this.gestureAnimationDismissing = true;
-
-      /**
-       * Reset the status bar style as the dismiss animation
-       * starts otherwise the status bar will be the wrong
-       * color for the duration of the dismiss animation.
-       * The dismiss method does this as well, but
-       * in this case it's only called once the animation
-       * has finished.
-       */
-      setCardStatusBarDefault(this.statusBarStyle);
-      this.animation!.onFinish(async () => {
-        await this.dismiss(undefined, GESTURE);
-        this.gestureAnimationDismissing = false;
-      });
-    });
+    this.gesture = createSwipeToCloseGesture(
+      el,
+      ani,
+      statusBarStyle,
+      () => this.cardOnDismiss(),
+      () => this.onDragStart(),
+      (detail: ModalDragEventDetail) => this.onDragMove(detail),
+      (detail: ModalDragEventDetail) => this.onDragEnd(detail)
+    );
     this.gesture.enable(true);
   }
 
@@ -746,13 +795,101 @@ export class Modal implements ComponentInterface, OverlayInterface {
           this.currentBreakpoint = breakpoint;
           this.ionBreakpointDidChange.emit({ breakpoint });
         }
-      }
+      },
+      () => this.onDragStart(),
+      (detail: ModalDragEventDetail) => this.onDragMove(detail),
+      (detail: ModalDragEventDetail) => this.onDragEnd(detail)
     );
 
     this.gesture = gesture;
     this.moveSheetToBreakpoint = moveSheetToBreakpoint;
 
     this.gesture.enable(true);
+
+    /**
+     * When backdrop interaction is allowed, nested router outlets from child routes
+     * may block pointer events to parent content. Apply passthrough styles only when
+     * the modal was the sole content of a child route page.
+     * See https://github.com/ionic-team/ionic-framework/issues/30700
+     */
+    const backdropNotBlocking = this.showBackdrop === false || this.focusTrap === false || backdropBreakpoint > 0;
+    if (backdropNotBlocking) {
+      this.setupChildRoutePassthrough();
+    }
+  }
+
+  /**
+   * For sheet modals that allow background interaction, sets up pointer-events
+   * passthrough on child route page wrappers and nested router outlets.
+   */
+  private setupChildRoutePassthrough() {
+    // Cache the page parent for cleanup
+    this.cachedPageParent = this.getOriginalPageParent();
+    const pageParent = this.cachedPageParent;
+
+    // Skip ion-app (controller modals) and pages with visible sibling content next to the modal
+    if (!pageParent || pageParent.tagName === 'ION-APP') {
+      return;
+    }
+
+    const hasVisibleContent = Array.from(pageParent.children).some(
+      (child) =>
+        child !== this.el &&
+        !(child instanceof HTMLElement && window.getComputedStyle(child).display === 'none') &&
+        child.tagName !== 'TEMPLATE' &&
+        child.tagName !== 'SLOT' &&
+        !(child.nodeType === Node.TEXT_NODE && !child.textContent?.trim())
+    );
+
+    if (hasVisibleContent) {
+      return;
+    }
+
+    // Child route case: page only contained the modal
+    pageParent.classList.add('ion-page-overlay-passthrough');
+
+    // Also make nested router outlets passthrough
+    const routerOutlet = pageParent.parentElement;
+    if (routerOutlet?.tagName === 'ION-ROUTER-OUTLET' && routerOutlet.parentElement?.tagName !== 'ION-APP') {
+      routerOutlet.style.setProperty('pointer-events', 'none');
+      routerOutlet.setAttribute('data-overlay-passthrough', 'true');
+    }
+  }
+
+  /**
+   * Finds the ion-page ancestor of the modal's original parent location.
+   */
+  private getOriginalPageParent(): HTMLElement | null {
+    if (!this.cachedOriginalParent) {
+      return null;
+    }
+
+    let pageParent: HTMLElement | null = this.cachedOriginalParent;
+    while (pageParent && !pageParent.classList.contains('ion-page')) {
+      pageParent = pageParent.parentElement;
+    }
+    return pageParent;
+  }
+
+  /**
+   * Removes passthrough styles added by setupChildRoutePassthrough.
+   */
+  private cleanupChildRoutePassthrough() {
+    const pageParent = this.cachedPageParent;
+    if (!pageParent) {
+      return;
+    }
+
+    pageParent.classList.remove('ion-page-overlay-passthrough');
+
+    const routerOutlet = pageParent.parentElement;
+    if (routerOutlet?.hasAttribute('data-overlay-passthrough')) {
+      routerOutlet.style.removeProperty('pointer-events');
+      routerOutlet.removeAttribute('data-overlay-passthrough');
+    }
+
+    // Clear the cached reference
+    this.cachedPageParent = undefined;
   }
 
   private sheetOnDismiss() {
@@ -775,6 +912,34 @@ export class Modal implements ComponentInterface, OverlayInterface {
     });
   }
 
+  private cardOnDismiss() {
+    /**
+     * While the gesture animation is finishing
+     * it is possible for a user to tap the backdrop.
+     * This would result in the dismiss animation
+     * being played again. Typically this is avoided
+     * by setting `presented = false` on the overlay
+     * component; however, we cannot do that here as
+     * that would prevent the element from being
+     * removed from the DOM.
+     */
+    this.gestureAnimationDismissing = true;
+
+    /**
+     * Reset the status bar style as the dismiss animation
+     * starts otherwise the status bar will be the wrong
+     * color for the duration of the dismiss animation.
+     * The dismiss method does this as well, but
+     * in this case it's only called once the animation
+     * has finished.
+     */
+    setCardStatusBarDefault(this.statusBarStyle);
+    this.animation!.onFinish(async () => {
+      await this.dismiss(undefined, GESTURE);
+      this.gestureAnimationDismissing = false;
+    });
+  }
+
   /**
    * Dismiss the modal overlay after it has been presented.
    * This is a no-op if the overlay has not been presented yet. If you want
@@ -790,6 +955,10 @@ export class Modal implements ComponentInterface, OverlayInterface {
     if (this.gestureAnimationDismissing && role !== GESTURE) {
       return false;
     }
+
+    // Cancel any pending resize timeout to prevent stale updates during dismiss
+    clearTimeout(this.resizeTimeout);
+    this.resizeTimeout = undefined;
 
     /**
      * Because the canDismiss check below is async,
@@ -862,6 +1031,9 @@ export class Modal implements ComponentInterface, OverlayInterface {
       }
       this.cleanupViewTransitionListener();
       this.cleanupParentRemovalObserver();
+      this.cleanupSafeAreaOverrides();
+
+      this.cleanupChildRoutePassthrough();
     }
     this.currentBreakpoint = undefined;
     this.animation = undefined;
@@ -1020,6 +1192,11 @@ export class Modal implements ComponentInterface, OverlayInterface {
   }
 
   private handleViewTransition() {
+    // Only run view transitions when the modal is presented
+    if (!this.presented) {
+      return;
+    }
+
     const isPortrait = window.innerWidth < 768;
 
     // Only transition if view state actually changed
@@ -1064,6 +1241,10 @@ export class Modal implements ComponentInterface, OverlayInterface {
 
     transitionAnimation.play().then(() => {
       this.viewTransitionAnimation = undefined;
+
+      // Wait for a layout pass after the transition so getBoundingClientRect()
+      // in getPositionBasedSafeAreaConfig() reflects the new dimensions.
+      raf(() => this.updateSafeAreaOverrides());
 
       // After orientation transition, recreate the swipe-to-close gesture
       // with updated animation that reflects the new presenting element state
@@ -1122,7 +1303,7 @@ export class Modal implements ComponentInterface, OverlayInterface {
       wrapperEl.style.opacity = '1';
     }
 
-    if (presentingElement) {
+    if (presentingElement?.tagName === 'ION-MODAL') {
       const isPortrait = window.innerWidth < 768;
 
       if (isPortrait) {
@@ -1183,6 +1364,20 @@ export class Modal implements ComponentInterface, OverlayInterface {
       return;
     }
 
+    /**
+     * Don't observe for controller-based modals or when the parent is the
+     * app root (document.body or ion-app). These parents won't be removed,
+     * and observing document.body with subtree: true causes performance
+     * issues with frameworks like Angular during change detection.
+     */
+    if (
+      this.hasController ||
+      this.cachedOriginalParent === document.body ||
+      this.cachedOriginalParent.tagName === 'ION-APP'
+    ) {
+      return;
+    }
+
     this.parentRemovalObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
@@ -1218,6 +1413,177 @@ export class Modal implements ComponentInterface, OverlayInterface {
   private cleanupParentRemovalObserver() {
     this.parentRemovalObserver?.disconnect();
     this.parentRemovalObserver = undefined;
+  }
+
+  private onDragStart() {
+    this.ionDragStart.emit();
+  }
+
+  private onDragMove(detail: ModalDragEventDetail) {
+    this.ionDragMove.emit(detail);
+  }
+
+  private onDragEnd(detail: ModalDragEventDetail) {
+    this.ionDragEnd.emit(detail);
+  }
+
+  /**
+   * Creates the context object for safe-area utilities.
+   *
+   * `hasCustomDimensions` is only set by `setInitialSafeAreaOverrides()`
+   * because it is only read by `getInitialSafeAreaConfig()`. Other callers
+   * (resize handler, post-animation update, fullscreen-padding apply) would
+   * pay a `getComputedStyle()` cost for a value they never consult.
+   */
+  private getSafeAreaContext(): ModalSafeAreaContext {
+    return {
+      isSheetModal: this.isSheetModal,
+      isCardModal: this.presentingElement !== undefined && getIonMode(this) === 'ios',
+      presentingElement: this.presentingElement,
+      breakpoints: this.breakpoints,
+      currentBreakpoint: this.currentBreakpoint,
+    };
+  }
+
+  /**
+   * Sets initial safe-area overrides before modal animation.
+   * Called in present() before animation starts.
+   *
+   * For sheet modals, the SCSS --height formula uses --ion-modal-offset-top
+   * (an internal property) instead of --ion-safe-area-top. We resolve the
+   * root safe-area-top to pixels and set --ion-modal-offset-top, decoupling
+   * the height calculation from --ion-safe-area-top (which is zeroed for
+   * sheets to prevent header content from getting double-offset padding).
+   */
+  private setInitialSafeAreaOverrides(): void {
+    const context: ModalSafeAreaContext = {
+      ...this.getSafeAreaContext(),
+      hasCustomDimensions: hasCustomModalDimensions(this.el),
+    };
+    const safeAreaConfig = getInitialSafeAreaConfig(context);
+    applySafeAreaOverrides(this.el, safeAreaConfig);
+
+    // Set the internal offset property with the resolved root safe-area-top value
+    if (context.isSheetModal) {
+      this.updateSheetOffsetTop();
+    }
+  }
+
+  /**
+   * Resolves the current root --ion-safe-area-top value and sets the
+   * internal --ion-modal-offset-top property on the host element.
+   * Called on present and on resize (e.g., device rotation changes safe-area).
+   */
+  private updateSheetOffsetTop(): void {
+    const safeAreaTop = getRootSafeAreaTop();
+    this.el.style.setProperty('--ion-modal-offset-top', `${safeAreaTop}px`);
+  }
+
+  /**
+   * Updates safe-area overrides during dynamic state changes.
+   * Called after animations, during gestures, and on orientation changes.
+   */
+  private updateSafeAreaOverrides(): void {
+    const { wrapperEl, el } = this;
+    const context = this.getSafeAreaContext();
+
+    // Sheet modals: safe-area is fully determined at presentation time
+    // (top is always 0px, height is frozen). Nothing to update.
+    if (context.isSheetModal) return;
+
+    // Card modals have fixed safe-area requirements set by initial prediction.
+    if (context.isCardModal) return;
+
+    // wrapperEl is required for position-based detection below
+    if (!wrapperEl) return;
+
+    // Regular modals: use position-based detection to correctly handle both
+    // fullscreen modals and centered dialogs with custom dimensions.
+    const safeAreaConfig = getPositionBasedSafeAreaConfig(wrapperEl);
+    applySafeAreaOverrides(el, safeAreaConfig);
+  }
+
+  /**
+   * Applies safe-area-bottom scroll padding to ion-content inside
+   * fullscreen modals that have no ion-footer. This prevents content
+   * from being hidden behind the system navigation bar while keeping
+   * the modal background edge-to-edge (no visible gap).
+   */
+  private applyFullscreenSafeArea(): void {
+    const context = this.getSafeAreaContext();
+    if (context.isSheetModal || context.isCardModal) return;
+
+    const { contentEl, hasFooter } = this.findContentAndFooter();
+    this.applyFullscreenSafeAreaTo(contentEl, hasFooter);
+  }
+
+  /**
+   * Sets --internal-content-safe-area-padding-bottom on the given ion-content
+   * when no footer is present, so ion-content's .inner-scroll includes
+   * safe-area-bottom in its scroll padding. This keeps the modal background
+   * edge-to-edge while ensuring content scrolls clear of the system nav bar.
+   *
+   * --internal-content-safe-area-padding-bottom is an internal CSS property used
+   * only by this code path. It is not part of ion-content's public API and
+   * should not be set by consumers. The default of 0px makes it a no-op
+   * when unset, which is the expected state for ion-content used outside of
+   * a fullscreen modal without a footer.
+   */
+  private applyFullscreenSafeAreaTo(contentEl: HTMLElement | null, hasFooter: boolean): void {
+    // Only apply for standard Ionic layouts (has ion-content but no
+    // ion-footer). When a footer is present it handles its own safe-area
+    // padding. Custom modals with raw HTML are developer-controlled.
+    if (!contentEl || hasFooter) return;
+
+    contentEl.style.setProperty('--internal-content-safe-area-padding-bottom', 'var(--ion-safe-area-bottom, 0px)');
+  }
+
+  /**
+   * Removes the internal --internal-content-safe-area-padding-bottom property
+   * from an already-located ion-content. Callers do their own
+   * findContentAndFooter() so they can also read hasFooter if needed.
+   */
+  private clearContentSafeAreaPadding(contentEl: HTMLElement | null): void {
+    if (!contentEl) return;
+    contentEl.style.removeProperty('--internal-content-safe-area-padding-bottom');
+  }
+
+  /**
+   * Finds ion-content and ion-footer among direct children and one level of
+   * grandchildren (for wrapped components like <app-footer><ion-footer>).
+   *
+   * Intentionally does NOT use findIonContent() or querySelector() because
+   * those search the full subtree and would match ion-content inside nested
+   * routes/pages. We only want direct slot children (+ one wrapper level).
+   *
+   * Uses a manual loop instead of querySelector(':scope > ...') because
+   * Stencil's mock-doc (used in spec tests) does not support :scope.
+   */
+  private findContentAndFooter(): { contentEl: HTMLElement | null; hasFooter: boolean } {
+    let contentEl: HTMLElement | null = null;
+    let hasFooter = false;
+    for (const child of Array.from(this.el.children)) {
+      if (child.tagName === 'ION-CONTENT') contentEl = child as HTMLElement;
+      if (child.tagName === 'ION-FOOTER') hasFooter = true;
+      for (const grandchild of Array.from(child.children)) {
+        if (grandchild.tagName === 'ION-CONTENT' && !contentEl) contentEl = grandchild as HTMLElement;
+        if (grandchild.tagName === 'ION-FOOTER') hasFooter = true;
+      }
+    }
+    return { contentEl, hasFooter };
+  }
+
+  /**
+   * Clears all safe-area overrides and padding.
+   */
+  private cleanupSafeAreaOverrides(): void {
+    clearSafeAreaOverrides(this.el);
+
+    // Remove internal sheet offset property
+    this.el.style.removeProperty('--ion-modal-offset-top');
+
+    const { contentEl } = this.findContentAndFooter();
+    this.clearContentSafeAreaPadding(contentEl);
   }
 
   render() {

@@ -783,11 +783,15 @@ export const IonRefresher: StencilVueComponent<JSX.IonRefresher> = /*@__PURE__*/
   'disabled',
   'ionRefresh',
   'ionPull',
-  'ionStart'
+  'ionStart',
+  'ionPullStart',
+  'ionPullEnd'
 ], [
   'ionRefresh',
   'ionPull',
-  'ionStart'
+  'ionStart',
+  'ionPullStart',
+  'ionPullEnd'
 ]);
 
 
@@ -804,9 +808,15 @@ export const IonReorder: StencilVueComponent<JSX.IonReorder> = /*@__PURE__*/ def
 
 export const IonReorderGroup: StencilVueComponent<JSX.IonReorderGroup> = /*@__PURE__*/ defineContainer<JSX.IonReorderGroup>('ion-reorder-group', defineIonReorderGroup, [
   'disabled',
-  'ionItemReorder'
+  'ionItemReorder',
+  'ionReorderStart',
+  'ionReorderMove',
+  'ionReorderEnd'
 ], [
-  'ionItemReorder'
+  'ionItemReorder',
+  'ionReorderStart',
+  'ionReorderMove',
+  'ionReorderEnd'
 ]);
 
 
@@ -893,6 +903,7 @@ export const IonSegmentContent: StencilVueComponent<JSX.IonSegmentContent> = /*@
 
 export const IonSegmentView: StencilVueComponent<JSX.IonSegmentView> = /*@__PURE__*/ defineContainer<JSX.IonSegmentView>('ion-segment-view', defineIonSegmentView, [
   'disabled',
+  'swipeGesture',
   'ionSegmentViewScroll'
 ], [
   'ionSegmentViewScroll'
@@ -941,6 +952,7 @@ export const IonSelect: StencilVueComponent<JSX.IonSelect, JSX.IonSelect["value"
 
 export const IonSelectModal: StencilVueComponent<JSX.IonSelectModal> = /*@__PURE__*/ defineContainer<JSX.IonSelectModal>('ion-select-modal', defineIonSelectModal, [
   'header',
+  'cancelText',
   'multiple',
   'options'
 ]);

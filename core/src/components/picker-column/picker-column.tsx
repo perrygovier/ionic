@@ -1,7 +1,7 @@
 import type { ComponentInterface, EventEmitter } from '@stencil/core';
 import { Component, Element, Event, Host, Method, Prop, State, Watch, h } from '@stencil/core';
 import { doc } from '@utils/browser';
-import { getElementRoot, raf } from '@utils/helpers';
+import { raf } from '@utils/helpers';
 import { hapticSelectionChanged, hapticSelectionEnd, hapticSelectionStart } from '@utils/native/haptic';
 import { isPlatform } from '@utils/platform';
 import { createColorClasses } from '@utils/theme';
@@ -122,9 +122,7 @@ export class PickerColumn implements ComponentInterface {
          * Because this initial call to scrollActiveItemIntoView has to fire before
          * the scroll listener is set up, we need to manage the active class manually.
          */
-        const oldActive = getElementRoot(el).querySelector<HTMLIonPickerColumnOptionElement>(
-          `.${PICKER_ITEM_ACTIVE_CLASS}`
-        );
+        const oldActive = el.querySelector<HTMLIonPickerColumnOptionElement>(`.${PICKER_ITEM_ACTIVE_CLASS}`);
         if (oldActive) {
           this.setPickerItemActiveState(oldActive, false);
         }
@@ -653,39 +651,6 @@ export class PickerColumn implements ComponentInterface {
     return el ? el.getAttribute('aria-label') ?? el.innerText : '';
   };
 
-  /**
-   * Render an element that overlays the column. This element is for assistive
-   * tech to allow users to navigate the column up/down. This element should receive
-   * focus as it listens for synthesized keyboard events as required by the
-   * slider role: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/slider_role
-   */
-  private renderAssistiveFocusable = () => {
-    const { activeItem } = this;
-    const valueText = this.getOptionValueText(activeItem);
-
-    /**
-     * When using the picker, the valuetext provides important context that valuenow
-     * does not. Additionally, using non-zero valuemin/valuemax values can cause
-     * WebKit to incorrectly announce numeric valuetext values (such as a year
-     * like "2024") as percentages: https://bugs.webkit.org/show_bug.cgi?id=273126
-     */
-    return (
-      <div
-        ref={(el) => (this.assistiveFocusable = el)}
-        class="assistive-focusable"
-        role="slider"
-        tabindex={this.disabled ? undefined : 0}
-        aria-label={this.ariaLabel}
-        aria-valuemin={0}
-        aria-valuemax={0}
-        aria-valuenow={0}
-        aria-valuetext={valueText}
-        aria-orientation="vertical"
-        onKeyDown={(ev) => this.onKeyDown(ev)}
-      ></div>
-    );
-  };
-
   render() {
     const { color, disabled, isActive, numericInput } = this;
     const mode = getIonMode(this);
@@ -699,33 +664,21 @@ export class PickerColumn implements ComponentInterface {
           ['picker-column-disabled']: disabled,
         })}
       >
-        {this.renderAssistiveFocusable()}
         <slot name="prefix"></slot>
         <div
-          aria-hidden="true"
           class="picker-opts"
           ref={(el) => {
             this.scrollEl = el;
           }}
-          /**
-           * When an element has an overlay scroll style and
-           * a fixed height, Firefox will focus the scrollable
-           * container if the content exceeds the container's
-           * dimensions.
-           *
-           * This causes keyboard navigation to focus to this
-           * element instead of going to the next element in
-           * the tab order.
-           *
-           * The desired behavior is for the user to be able to
-           * focus the assistive focusable element and tab to
-           * the next element in the tab order. Instead of tabbing
-           * to this element.
-           *
-           * To prevent this, we set the tabIndex to -1. This
-           * will match the behavior of the other browsers.
-           */
-          tabIndex={-1}
+          role="slider"
+          tabindex={this.disabled ? undefined : 0}
+          aria-label={this.ariaLabel}
+          aria-valuemin={0}
+          aria-valuemax={0}
+          aria-valuenow={0}
+          aria-valuetext={this.getOptionValueText(this.activeItem)}
+          aria-orientation="vertical"
+          onKeyDown={(ev) => this.onKeyDown(ev)}
         >
           <div class="picker-item-empty" aria-hidden="true">
             &nbsp;

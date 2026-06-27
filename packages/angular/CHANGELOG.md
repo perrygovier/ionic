@@ -3,6 +3,335 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [8.8.12](https://github.com/ionic-team/ionic-framework/compare/v8.8.11...v8.8.12) (2026-06-24)
+
+
+### Bug Fixes
+
+* **angular:** honor modifier-click on routerLink ([#31230](https://github.com/ionic-team/ionic-framework/issues/31230)) ([2ac9851](https://github.com/ionic-team/ionic-framework/commit/2ac98512c78f6d47e3a6a17ff0159047ba14a5cd)), closes [#26394](https://github.com/ionic-team/ionic-framework/issues/26394)
+* **angular:** run change detection on attached overlay views ([#31235](https://github.com/ionic-team/ionic-framework/issues/31235)) ([8e76fd0](https://github.com/ionic-team/ionic-framework/commit/8e76fd0cceeb878ad4b071515acb593892512111)), closes [#31220](https://github.com/ionic-team/ionic-framework/issues/31220)
+
+
+
+
+
+## [8.8.11](https://github.com/ionic-team/ionic-framework/compare/v8.8.10...v8.8.11) (2026-06-17)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.10](https://github.com/ionic-team/ionic-framework/compare/v8.8.9...v8.8.10) (2026-06-10)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.9](https://github.com/ionic-team/ionic-framework/compare/v8.8.8...v8.8.9) (2026-06-03)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.8](https://github.com/ionic-team/ionic-framework/compare/v8.8.7...v8.8.8) (2026-05-20)
+
+
+### Bug Fixes
+
+* **tabs:** preserve query params and fragment from tab button href ([#31154](https://github.com/ionic-team/ionic-framework/issues/31154)) ([0182bba](https://github.com/ionic-team/ionic-framework/commit/0182bba06d6171dd2faf80556fd2131abf03fa93)), closes [#25470](https://github.com/ionic-team/ionic-framework/issues/25470)
+
+
+
+
+
+## [8.8.7](https://github.com/ionic-team/ionic-framework/compare/v8.8.6...v8.8.7) (2026-05-13)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.6](https://github.com/ionic-team/ionic-framework/compare/v8.8.5...v8.8.6) (2026-05-06)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.5](https://github.com/ionic-team/ionic-framework/compare/v8.8.4...v8.8.5) (2026-04-29)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.4](https://github.com/ionic-team/ionic-framework/compare/v8.8.3...v8.8.4) (2026-04-15)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.3](https://github.com/ionic-team/ionic-framework/compare/v8.8.2...v8.8.3) (2026-04-01)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.8.2](https://github.com/ionic-team/ionic-framework/compare/v8.8.1...v8.8.2) (2026-03-25)
+
+
+### Bug Fixes
+
+* **angular:** forward generic type parameter on ModalOptions and PopoverOptions ([#31022](https://github.com/ionic-team/ionic-framework/issues/31022)) ([cbfe7cc](https://github.com/ionic-team/ionic-framework/commit/cbfe7cce3be345eacbf9fe29e74438a927c16679)), closes [#31012](https://github.com/ionic-team/ionic-framework/issues/31012)
+* **checkbox:** re-evaluate label visibility when label is updated ([#30980](https://github.com/ionic-team/ionic-framework/issues/30980)) ([ce83407](https://github.com/ionic-team/ionic-framework/commit/ce83407e1debbe74f20d2d6dc2535a0ef3f974a0))
+
+
+
+
+
+## [8.8.1](https://github.com/ionic-team/ionic-framework/compare/v8.8.0...v8.8.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* **angular:** export RefresherPullEnd types ([#30991](https://github.com/ionic-team/ionic-framework/issues/30991)) ([72abcca](https://github.com/ionic-team/ionic-framework/commit/72abccaad8df3c1db004da28610fddd95ac93c02))
+
+
+
+
+
+# [8.8.0](https://github.com/ionic-team/ionic-framework/compare/v8.7.18...v8.8.0) (2026-03-04)
+
+
+### Features
+
+* **angular:** add custom injector support for modal and popover controllers ([#30899](https://github.com/ionic-team/ionic-framework/issues/30899)) ([822da42](https://github.com/ionic-team/ionic-framework/commit/822da428af86cd9b036b81515272321eb8fa586c)), closes [#30638](https://github.com/ionic-team/ionic-framework/issues/30638)
+* **modal:** add drag events for sheet and card modals ([#30962](https://github.com/ionic-team/ionic-framework/issues/30962)) ([d29ac71](https://github.com/ionic-team/ionic-framework/commit/d29ac713fad604c256fb385eb0c26eb9717e1ff4)), closes [#23955](https://github.com/ionic-team/ionic-framework/issues/23955)
+* **refresher:** add ionPullStart and ionPullEnd events ([#30946](https://github.com/ionic-team/ionic-framework/issues/30946)) ([814c2e5](https://github.com/ionic-team/ionic-framework/commit/814c2e5ccd6d5bfda12bdf13a566cd66ff830d5b)), closes [#24524](https://github.com/ionic-team/ionic-framework/issues/24524)
+* **segment-view:** add swipeGesture property to disable swiping ([#30948](https://github.com/ionic-team/ionic-framework/issues/30948)) ([46806bd](https://github.com/ionic-team/ionic-framework/commit/46806bd6e2af90a0b31fca68f508c06d3d281ec0)), closes [#30290](https://github.com/ionic-team/ionic-framework/issues/30290)
+* **select:** pass cancelText property to modal interface ([#30282](https://github.com/ionic-team/ionic-framework/issues/30282)) ([6e4f60a](https://github.com/ionic-team/ionic-framework/commit/6e4f60af4c188ae04028b444aa21118ae27c2ca7))
+* **textarea:** reflect disabled and readonly props ([#30910](https://github.com/ionic-team/ionic-framework/issues/30910)) ([55735df](https://github.com/ionic-team/ionic-framework/commit/55735df3fa62c8e259c56db3169f3d5459e71c0c))
+
+
+
+
+
+## [8.7.18](https://github.com/ionic-team/ionic-framework/compare/v8.7.17...v8.7.18) (2026-02-25)
+
+
+### Bug Fixes
+
+* **nav-controller:** reset direction state when navigation is canceled ([#30955](https://github.com/ionic-team/ionic-framework/issues/30955)) ([53172d1](https://github.com/ionic-team/ionic-framework/commit/53172d1a4035d5b510c230553aabd53dc1389e4b))
+
+
+
+
+
+## [8.7.17](https://github.com/ionic-team/ionic-framework/compare/v8.7.15...v8.7.17) (2026-01-14)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.16](https://github.com/ionic-team/ionic-framework/compare/v8.7.15...v8.7.16) (2025-12-31)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.15](https://github.com/ionic-team/ionic-framework/compare/v8.7.14...v8.7.15) (2025-12-23)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.14](https://github.com/ionic-team/ionic-framework/compare/v8.7.13...v8.7.14) (2025-12-17)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.13](https://github.com/ionic-team/ionic-framework/compare/v8.7.12...v8.7.13) (2025-12-13)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.12](https://github.com/ionic-team/ionic-framework/compare/v8.7.11...v8.7.12) (2025-12-10)
+
+
+### Bug Fixes
+
+* **modal:** allow interaction with parent content through sheet modals in child routes ([#30839](https://github.com/ionic-team/ionic-framework/issues/30839)) ([b9e3cf0](https://github.com/ionic-team/ionic-framework/commit/b9e3cf0f5aae79a1f27a07b102c77e51f24825f4)), closes [#30700](https://github.com/ionic-team/ionic-framework/issues/30700)
+
+
+
+
+
+## [8.7.11](https://github.com/ionic-team/ionic-framework/compare/v8.7.10...v8.7.11) (2025-11-26)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.10](https://github.com/ionic-team/ionic-framework/compare/v8.7.9...v8.7.10) (2025-11-19)
+
+
+### Bug Fixes
+
+* **checkbox, toggle, radio-group:** improve screen reader announcement timing for validation errors ([#30714](https://github.com/ionic-team/ionic-framework/issues/30714)) ([92db364](https://github.com/ionic-team/ionic-framework/commit/92db36489cca944caf1593dbd518a1f025a171a2))
+
+
+
+
+
+## [8.7.9](https://github.com/ionic-team/ionic-framework/compare/v8.7.8...v8.7.9) (2025-11-05)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.8](https://github.com/ionic-team/ionic-framework/compare/v8.7.7...v8.7.8) (2025-10-29)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.7](https://github.com/ionic-team/ionic-framework/compare/v8.7.6...v8.7.7) (2025-10-15)
+
+
+### Bug Fixes
+
+* **select:** improve screen reader announcement timing for validation errors ([#30723](https://github.com/ionic-team/ionic-framework/issues/30723)) ([03303d7](https://github.com/ionic-team/ionic-framework/commit/03303d73f0bfe2380ced7931525fc52fd8576367))
+
+
+
+
+
+## [8.7.6](https://github.com/ionic-team/ionic-framework/compare/v8.7.5...v8.7.6) (2025-10-08)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.5](https://github.com/ionic-team/ionic-framework/compare/v8.7.4...v8.7.5) (2025-09-24)
+
+
+### Bug Fixes
+
+* **modal:** allow sheet modals to skip focus trap ([#30689](https://github.com/ionic-team/ionic-framework/issues/30689)) ([a40d957](https://github.com/ionic-team/ionic-framework/commit/a40d957ad9c1897af365a91b45b00228a00d614c)), closes [#30684](https://github.com/ionic-team/ionic-framework/issues/30684)
+
+
+
+
+
+## [8.7.4](https://github.com/ionic-team/ionic-framework/compare/v8.7.3...v8.7.4) (2025-09-17)
+
+
+### Bug Fixes
+
+* **input:** improve error text accessibility ([#30635](https://github.com/ionic-team/ionic-framework/issues/30635)) ([c339bc3](https://github.com/ionic-team/ionic-framework/commit/c339bc36827b62ef871325869a9a5db9b17ac785))
+* **overlays,picker:** remove invalid aria-hidden attribute ([#30563](https://github.com/ionic-team/ionic-framework/issues/30563)) ([49f96d7](https://github.com/ionic-team/ionic-framework/commit/49f96d7f1e9050a95e3e33a821c0467ecc0bed64)), closes [#30040](https://github.com/ionic-team/ionic-framework/issues/30040)
+
+
+
+
+
+## [8.7.3](https://github.com/ionic-team/ionic-framework/compare/v8.7.2...v8.7.3) (2025-08-20)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.7.2](https://github.com/ionic-team/ionic-framework/compare/v8.7.1...v8.7.2) (2025-08-06)
+
+
+### Bug Fixes
+
+* **reorder-group:**  add children fallback for framework compatibility ([#30593](https://github.com/ionic-team/ionic-framework/issues/30593)) ([1cd81b9](https://github.com/ionic-team/ionic-framework/commit/1cd81b92301378d55bce63a01dfcf95a91c92652)), closes [#30592](https://github.com/ionic-team/ionic-framework/issues/30592)
+
+
+
+
+
+## [8.7.1](https://github.com/ionic-team/ionic-framework/compare/v8.7.0...v8.7.1) (2025-07-31)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+# [8.7.0](https://github.com/ionic-team/ionic-framework/compare/v8.6.7...v8.7.0) (2025-07-30)
+
+
+### Features
+
+* **deps:** update ionicons to v8 ([#30390](https://github.com/ionic-team/ionic-framework/issues/30390)) ([74cd71a](https://github.com/ionic-team/ionic-framework/commit/74cd71af243183aa738d11b280e155bdfd652126)), closes [#30445](https://github.com/ionic-team/ionic-framework/issues/30445)
+* **modal:** add IonModalToken for injecting modal elements in Angular components ([#30474](https://github.com/ionic-team/ionic-framework/issues/30474)) ([30d1910](https://github.com/ionic-team/ionic-framework/commit/30d1910d6ea5428b414d0e127e7681f59426c538))
+* **reorder-group:** add ionReorderStart, ionReorderMove, ionReorderEnd events ([#30471](https://github.com/ionic-team/ionic-framework/issues/30471)) ([b154f4e](https://github.com/ionic-team/ionic-framework/commit/b154f4ed095890f57ccab539fd9217976a5466e5)), closes [#23148](https://github.com/ionic-team/ionic-framework/issues/23148) [#27614](https://github.com/ionic-team/ionic-framework/issues/27614)
+
+
+
+
+
+## [8.6.7](https://github.com/ionic-team/ionic-framework/compare/v8.6.6...v8.6.7) (2025-07-30)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.6.6](https://github.com/ionic-team/ionic-framework/compare/v8.6.5...v8.6.6) (2025-07-30)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
+## [8.6.5](https://github.com/ionic-team/ionic-framework/compare/v8.6.4...v8.6.5) (2025-07-16)
+
+**Note:** Version bump only for package @ionic/angular
+
+
+
+
+
 ## [8.6.4](https://github.com/ionic-team/ionic-framework/compare/v8.6.3...v8.6.4) (2025-07-09)
 
 **Note:** Version bump only for package @ionic/angular

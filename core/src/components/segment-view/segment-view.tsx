@@ -1,5 +1,6 @@
 import type { ComponentInterface, EventEmitter } from '@stencil/core';
 import { Component, Element, Event, Host, Listen, Method, Prop, State, h } from '@stencil/core';
+import { isRTL } from '@utils/rtl';
 
 import type { SegmentViewScrollEvent } from './segment-view-interface';
 
@@ -23,6 +24,11 @@ export class SegmentView implements ComponentInterface {
   @Prop() disabled = false;
 
   /**
+   * If `true`, users will be able to swipe the segment view to navigate between segment contents.
+   */
+  @Prop() swipeGesture = true;
+
+  /**
    * @internal
    *
    * If `true`, the segment view is scrollable.
@@ -39,7 +45,8 @@ export class SegmentView implements ComponentInterface {
   @Listen('scroll')
   handleScroll(ev: Event) {
     const { scrollLeft, scrollWidth, clientWidth } = ev.target as HTMLElement;
-    const scrollRatio = scrollLeft / (scrollWidth - clientWidth);
+    const max = scrollWidth - clientWidth;
+    const scrollRatio = (isRTL(this.el) ? -1 : 1) * (scrollLeft / max);
 
     this.ionSegmentViewScroll.emit({
       scrollRatio,
@@ -125,9 +132,11 @@ export class SegmentView implements ComponentInterface {
     this.resetScrollEndTimeout();
 
     const contentWidth = this.el.offsetWidth;
+    const offset = index * contentWidth;
+
     this.el.scrollTo({
       top: 0,
-      left: index * contentWidth,
+      left: (isRTL(this.el) ? -1 : 1) * offset,
       behavior: smoothScroll ? 'smooth' : 'instant',
     });
   }
@@ -137,13 +146,14 @@ export class SegmentView implements ComponentInterface {
   }
 
   render() {
-    const { disabled, isManualScroll } = this;
+    const { disabled, isManualScroll, swipeGesture } = this;
 
     return (
       <Host
         class={{
           'segment-view-disabled': disabled,
           'segment-view-scroll-disabled': isManualScroll === false,
+          'segment-view-swipe-disabled': swipeGesture === false,
         }}
       >
         <slot></slot>

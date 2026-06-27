@@ -2,7 +2,6 @@ import type { KeyboardResizeOptions } from '@capacitor/keyboard';
 import { win } from '@utils/browser';
 
 import { getScrollElement, scrollByPoint } from '../../content';
-import { raf } from '../../helpers';
 import { KeyboardResize } from '../../native/keyboard';
 
 import { relocateInput, SCROLL_AMOUNT_PADDING } from './common';
@@ -254,13 +253,6 @@ const jsSetFocus = async (
   setManualFocus(inputEl);
 
   /**
-   * Relocating/Focusing input causes the
-   * click event to be cancelled, so
-   * manually fire one here.
-   */
-  raf(() => componentEl.click());
-
-  /**
    * If enabled, we can add scroll padding to
    * the bottom of the content so that scroll assist
    * has enough room to scroll the input above
@@ -291,8 +283,14 @@ const jsSetFocus = async (
       // give the native text input focus
       relocateInput(componentEl, inputEl, false, scrollData.inputSafeY);
 
-      // ensure this is the focused input
-      setManualFocus(inputEl);
+      /**
+       * If focus has moved to another element while scroll assist was running,
+       * don't steal focus back. This prevents focus jumping when users
+       * quickly switch between inputs or tap other elements.
+       */
+      if (document.activeElement === inputEl) {
+        setManualFocus(inputEl);
+      }
 
       /**
        * When the input is about to be blurred

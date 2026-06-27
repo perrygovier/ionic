@@ -319,9 +319,7 @@ configs({ modes: ['md'], directions: ['ltr'] }).forEach(({ title, config }) => {
 
       await expect(calendarHeader).toHaveText(/June 2022/);
     });
-    test('should not re-render if swipe is in progress', async ({ page, skip }) => {
-      skip.browser('webkit', 'Wheel is not available in WebKit');
-
+    test('should not re-render while a swipe is in progress', async ({ page }) => {
       await page.setContent(
         `
         <ion-datetime value="2022-05-03"></ion-datetime>
@@ -336,15 +334,56 @@ configs({ modes: ['md'], directions: ['ltr'] }).forEach(({ title, config }) => {
 
       await expect(calendarHeader).toHaveText(/May 2022/);
 
-      const box = await calendarBody.boundingBox();
+      // Scroll the calendar a little, but not far enough to land on the next
+      // month. This mimics a swipe that the user started but did not finish.
+      await calendarBody.evaluate((el: HTMLElement) => {
+        const monthWidth = el.querySelector('.calendar-month')!.clientWidth;
+        el.scrollLeft = monthWidth + 30;
+      });
 
-      if (box) {
-        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-        await page.mouse.wheel(-50, 0);
-        await page.waitForChanges();
+      // Give the component time to react to the scroll
+      await page.waitForChanges();
 
-        await expect(calendarHeader).toHaveText(/May 2022/);
-      }
+      // Because the calendar never settled on a new month, the header should
+      // still show the original month.
+      await expect(calendarHeader).toHaveText(/May 2022/);
+    });
+  });
+});
+
+/**
+ * This behavior does not differ across
+ * modes/directions.
+ */
+
+configs({ modes: ['md'], directions: ['ltr'] }).forEach(({ title, config }) => {
+  test.describe(title('datetime: month picker selection'), () => {
+    test('datetime: month picker selection', async ({ page }) => {
+      await page.setContent(
+        `
+        <ion-datetime value="2022-05-03"></ion-datetime>
+      `,
+        config
+      );
+
+      await page.locator('.datetime-ready').waitFor();
+
+      const nextMonthButton = page.locator('ion-datetime .calendar-next-prev ion-button').nth(1);
+      const monthYearButton = page.locator('ion-datetime .calendar-month-year');
+
+      await expect(monthYearButton).toHaveText(/May 2022/);
+
+      await nextMonthButton.click();
+      await expect(monthYearButton).toHaveText(/June 2022/);
+
+      await nextMonthButton.click();
+      await expect(monthYearButton).toHaveText(/July 2022/);
+
+      await monthYearButton.click();
+      await page.waitForChanges();
+
+      const selectedMonthOptions = page.locator('.month-column ion-picker-column-option.option-active');
+      await expect(selectedMonthOptions).toHaveCount(1);
     });
   });
 });
@@ -390,6 +429,61 @@ configs({ modes: ['ios'], directions: ['ltr'] }).forEach(({ title, config }) => 
 
       // month/year interface should be reset
       await expect(monthYearInterface).toBeHidden();
+    });
+  });
+});
+
+/**
+ * Synthetic IntersectionObserver fallback behavior.
+ *
+ * This test stubs IntersectionObserver so that the callback
+ * never reports an intersecting entry. The datetime should
+ * still become ready via its internal fallback logic.
+ */
+configs({ modes: ['md'], directions: ['ltr'] }).forEach(({ title, config }) => {
+  test.describe(title('datetime: IO fallback'), () => {
+    test('should become ready even if IntersectionObserver never reports visible', async ({ page }, testInfo) => {
+      testInfo.annotations.push({
+        type: 'issue',
+        description: 'https://github.com/ionic-team/ionic-framework/issues/30706',
+      });
+
+      await page.addInitScript(() => {
+        const OriginalIO = window.IntersectionObserver;
+        (window as any).IntersectionObserver = function (callback: any, options: any) {
+          const instance = new OriginalIO(() => {}, options);
+          const originalObserve = instance.observe.bind(instance);
+
+          instance.observe = (target: Element) => {
+            originalObserve(target);
+            callback([
+              {
+                isIntersecting: false,
+                target,
+              } as IntersectionObserverEntry,
+            ]);
+          };
+
+          return instance;
+        } as any;
+      });
+
+      await page.setContent(
+        `
+        <ion-datetime value="2022-05-03"></ion-datetime>
+      `,
+        config
+      );
+
+      const datetime = page.locator('ion-datetime');
+
+      // Give the fallback a short amount of time to run
+      await page.waitForTimeout(100);
+
+      await expect(datetime).toHaveClass(/datetime-ready/);
+
+      const calendarBody = datetime.locator('.calendar-body');
+      await expect(calendarBody).toBeVisible();
     });
   });
 });
@@ -719,6 +813,86 @@ configs({ modes: ['md'], directions: ['ltr'] }).forEach(({ title, config }) => {
       expect(logs[0]).toContain(
         "[Ionic Warning]: [ion-datetime] - The 'date-time' presentation requires either a date or time object (or both) in formatOptions."
       );
+    });
+  });
+});
+
+/**
+ * This behavior does not differ across
+ * modes/directions.
+ */
+configs({ modes: ['md'], directions: ['ltr'] }).forEach(({ title, config }) => {
+  test.describe(title('datetime: animated'), () => {
+    test('next month button should instantly replace month view when animations are disabled', async ({ page }) => {
+      test.info().annotations.push({
+        type: 'issue',
+        description: 'https://github.com/ionic-team/ionic-framework/issues/30484',
+      });
+
+      await page.addInitScript(() => {
+        (window as any).__scrollToCalls = [];
+        const original = Element.prototype.scrollTo;
+        Element.prototype.scrollTo = function (this: Element, ...args: any[]) {
+          if (this.classList?.contains('calendar-body')) {
+            (window as any).__scrollToCalls.push(args[0]);
+          }
+          return (original as any).apply(this, args);
+        };
+      });
+
+      await page.setContent(
+        `
+              <script>window.Ionic = {config: {animated: false}};</script>
+              <ion-datetime value="2026-06-19T16:08:25.697Z"></ion-datetime>
+              `,
+        config
+      );
+      await page.locator('.datetime-ready').waitFor();
+
+      const nextMonthButton = page.locator('ion-datetime .calendar-next-prev ion-button').nth(1);
+      await nextMonthButton.click();
+      await page.waitForChanges();
+
+      const scrollCalls = await page.evaluate(() => (window as any).__scrollToCalls);
+
+      expect(scrollCalls.length).toBeGreaterThan(0);
+      expect(scrollCalls[0].behavior).toBe('instant');
+    });
+
+    test('previous month button should instantly replace month view when animations are disabled', async ({ page }) => {
+      test.info().annotations.push({
+        type: 'issue',
+        description: 'https://github.com/ionic-team/ionic-framework/issues/30484',
+      });
+
+      await page.addInitScript(() => {
+        (window as any).__scrollToCalls = [];
+        const original = Element.prototype.scrollTo;
+        Element.prototype.scrollTo = function (this: Element, ...args: any[]) {
+          if (this.classList?.contains('calendar-body')) {
+            (window as any).__scrollToCalls.push(args[0]);
+          }
+          return (original as any).apply(this, args);
+        };
+      });
+
+      await page.setContent(
+        `
+              <script>window.Ionic = {config: {animated: false}};</script>
+              <ion-datetime value="2026-06-19T16:08:25.697Z"></ion-datetime>
+              `,
+        config
+      );
+      await page.locator('.datetime-ready').waitFor();
+
+      const prevMonthButton = page.locator('ion-datetime .calendar-next-prev ion-button').nth(0);
+      await prevMonthButton.click();
+      await page.waitForChanges();
+
+      const scrollCalls = await page.evaluate(() => (window as any).__scrollToCalls);
+
+      expect(scrollCalls.length).toBeGreaterThan(0);
+      expect(scrollCalls[0].behavior).toBe('instant');
     });
   });
 });

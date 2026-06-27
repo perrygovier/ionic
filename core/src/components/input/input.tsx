@@ -14,7 +14,7 @@ import {
   h,
 } from '@stencil/core';
 import type { NotchController } from '@utils/forms';
-import { createNotchController } from '@utils/forms';
+import { createNotchController, checkInvalidState } from '@utils/forms';
 import type { Attributes } from '@utils/helpers';
 import { inheritAriaAttributes, debounceEvent, inheritAttributes, componentOnReady } from '@utils/helpers';
 import { createSlotMutationController } from '@utils/slot-mutation-controller';
@@ -48,6 +48,7 @@ export class Input implements ComponentInterface {
   private inputId = `ion-input-${inputIds++}`;
   private helperTextId = `${this.inputId}-helper-text`;
   private errorTextId = `${this.inputId}-error-text`;
+  private labelTextId = `${this.inputId}-label`;
   private inheritedAttributes: Attributes = {};
   private isComposing = false;
   private slotMutationController?: SlotMutationController;
@@ -79,7 +80,14 @@ export class Input implements ComponentInterface {
    */
   @State() hasFocus = false;
 
+  /**
+   * Track validation state for proper aria-live announcements
+   */
+  @State() isInvalid = false;
+
   @Element() el!: HTMLIonInputElement;
+
+  private validationObserver?: MutationObserver;
 
   /**
    * The color to use from your application's color palette.
@@ -399,12 +407,37 @@ export class Input implements ComponentInterface {
   connectedCallback() {
     const { el } = this;
 
-    this.slotMutationController = createSlotMutationController(el, ['label', 'start', 'end'], () => forceUpdate(this));
+    this.slotMutationController = createSlotMutationController(el, ['label', 'start', 'end'], () => {
+      this.setSlottedLabelId();
+      forceUpdate(this);
+    });
+
+    this.setSlottedLabelId();
     this.notchController = createNotchController(
       el,
       () => this.notchSpacerEl,
       () => this.labelSlot
     );
+
+    // Watch for class changes to update validation state
+    if (Build.isBrowser && typeof MutationObserver !== 'undefined') {
+      this.validationObserver = new MutationObserver(() => {
+        const newIsInvalid = checkInvalidState(el);
+        if (this.isInvalid !== newIsInvalid) {
+          this.isInvalid = newIsInvalid;
+          // Force a re-render to update aria-describedby immediately
+          forceUpdate(this);
+        }
+      });
+
+      this.validationObserver.observe(el, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    }
+
+    // Always set initial state
+    this.isInvalid = checkInvalidState(el);
 
     this.debounceChanged();
     if (Build.isBrowser) {
@@ -450,6 +483,12 @@ export class Input implements ComponentInterface {
     if (this.notchController) {
       this.notchController.destroy();
       this.notchController = undefined;
+    }
+
+    // Clean up validation observer to prevent memory leaks
+    if (this.validationObserver) {
+      this.validationObserver.disconnect();
+      this.validationObserver = undefined;
     }
   }
 
@@ -626,22 +665,22 @@ export class Input implements ComponentInterface {
    * Renders the helper text or error text values
    */
   private renderHintText() {
-    const { helperText, errorText, helperTextId, errorTextId } = this;
+    const { helperText, errorText, helperTextId, errorTextId, isInvalid } = this;
 
     return [
-      <div id={helperTextId} class="helper-text">
-        {helperText}
+      <div id={helperTextId} class="helper-text" aria-live="polite">
+        {!isInvalid ? helperText : null}
       </div>,
-      <div id={errorTextId} class="error-text">
-        {errorText}
+      <div id={errorTextId} class="error-text" role="alert">
+        {isInvalid ? errorText : null}
       </div>,
     ];
   }
 
   private getHintTextID(): string | undefined {
-    const { el, helperText, errorText, helperTextId, errorTextId } = this;
+    const { isInvalid, helperText, errorText, helperTextId, errorTextId } = this;
 
-    if (el.classList.contains('ion-touched') && el.classList.contains('ion-invalid') && errorText) {
+    if (isInvalid && errorText) {
       return errorTextId;
     }
 
@@ -688,7 +727,7 @@ export class Input implements ComponentInterface {
   }
 
   private renderLabel() {
-    const { label } = this;
+    const { label, labelTextId } = this;
 
     return (
       <div
@@ -696,8 +735,17 @@ export class Input implements ComponentInterface {
           'label-text-wrapper': true,
           'label-text-wrapper-hidden': !this.hasLabel,
         }}
+        // Prevents Android TalkBack from focusing the label separately.
+        // The input remains labelled via aria-labelledby.
+        aria-hidden={this.hasLabel ? 'true' : null}
       >
-        {label === undefined ? <slot name="label"></slot> : <div class="label-text">{label}</div>}
+        {label === undefined ? (
+          <slot name="label"></slot>
+        ) : (
+          <div class="label-text" id={labelTextId}>
+            {label}
+          </div>
+        )}
       </div>
     );
   }
@@ -708,6 +756,33 @@ export class Input implements ComponentInterface {
    */
   private get labelSlot() {
     return this.el.querySelector('[slot="label"]');
+  }
+
+  /**
+   * Ensures the slotted label element has an ID for aria-labelledby.
+   * If no ID exists, we assign one using our generated labelTextId.
+   */
+  private setSlottedLabelId() {
+    const slottedLabel = this.labelSlot;
+    if (slottedLabel && !slottedLabel.id) {
+      slottedLabel.id = this.labelTextId;
+    }
+  }
+
+  /**
+   * Returns the ID to use for aria-labelledby on the native input,
+   * or undefined if aria-label is explicitly set (to avoid conflicts).
+   */
+  private getLabelledById(): string | undefined {
+    if (this.inheritedAttributes['aria-label']) {
+      return undefined;
+    }
+
+    if (this.label !== undefined) {
+      return this.labelTextId;
+    }
+
+    return this.labelSlot?.id || undefined;
   }
 
   /**
@@ -864,7 +939,8 @@ export class Input implements ComponentInterface {
               onCompositionstart={this.onCompositionStart}
               onCompositionend={this.onCompositionEnd}
               aria-describedby={this.getHintTextID()}
-              aria-invalid={this.getHintTextID() === this.errorTextId}
+              aria-invalid={this.isInvalid ? 'true' : undefined}
+              aria-labelledby={this.getLabelledById()}
               {...this.inheritedAttributes}
             />
             {this.clearInput && !readonly && !disabled && (

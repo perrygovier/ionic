@@ -1,13 +1,13 @@
 import {
   ApplicationRef,
-  NgZone,
-  Injectable,
-  Injector,
+  ComponentRef,
+  createComponent,
   EnvironmentInjector,
   inject,
-  createComponent,
+  Injectable,
   InjectionToken,
-  ComponentRef,
+  Injector,
+  NgZone,
 } from '@angular/core';
 import {
   FrameworkDelegate,
@@ -22,6 +22,9 @@ import { NavParams } from '../directives/navigation/nav-params';
 
 import { ConfigToken } from './config';
 
+// Token for injecting the modal element
+export const IonModalToken = new InjectionToken<HTMLIonModalElement>('IonModalToken');
+
 // TODO(FW-2827): types
 
 @Injectable()
@@ -33,7 +36,8 @@ export class AngularDelegate {
   create(
     environmentInjector: EnvironmentInjector,
     injector: Injector,
-    elementReferenceKey?: string
+    elementReferenceKey?: string,
+    customInjector?: Injector
   ): AngularFrameworkDelegate {
     return new AngularFrameworkDelegate(
       environmentInjector,
@@ -41,7 +45,8 @@ export class AngularDelegate {
       this.applicationRef,
       this.zone,
       elementReferenceKey,
-      this.config.useSetInputAPI ?? false
+      this.config.useSetInputAPI ?? false,
+      customInjector
     );
   }
 }
@@ -56,7 +61,8 @@ export class AngularFrameworkDelegate implements FrameworkDelegate {
     private applicationRef: ApplicationRef,
     private zone: NgZone,
     private elementReferenceKey?: string,
-    private enableSignalsSupport?: boolean
+    private enableSignalsSupport?: boolean,
+    private customInjector?: Injector
   ) {}
 
   attachViewToDom(container: any, component: any, params?: any, cssClasses?: string[]): Promise<any> {
@@ -90,7 +96,8 @@ export class AngularFrameworkDelegate implements FrameworkDelegate {
           componentProps,
           cssClasses,
           this.elementReferenceKey,
-          this.enableSignalsSupport
+          this.enableSignalsSupport,
+          this.customInjector
         );
         resolve(el);
       });
@@ -128,7 +135,8 @@ export const attachView = (
   params: any,
   cssClasses: string[] | undefined,
   elementReferenceKey: string | undefined,
-  enableSignalsSupport: boolean | undefined
+  enableSignalsSupport: boolean | undefined,
+  customInjector?: Injector
 ): any => {
   /**
    * Wraps the injector with a custom injector that
@@ -142,9 +150,20 @@ export const attachView = (
    * The modern approach is to access the data directly
    * from the component's class instance.
    */
+  const providers = getProviders(params);
+
+  // If this is an ion-modal, provide the modal element as an injectable
+  // so components inside the modal can inject it directly
+  if (container.tagName.toLowerCase() === 'ion-modal') {
+    providers.push({
+      provide: IonModalToken,
+      useValue: container,
+    });
+  }
+
   const childInjector = Injector.create({
-    providers: getProviders(params),
-    parent: injector,
+    providers,
+    parent: customInjector ?? injector,
   });
 
   const componentRef = createComponent<any>(component, {
@@ -213,6 +232,14 @@ export const attachView = (
   container.appendChild(hostElement);
 
   applicationRef.attachView(componentRef.hostView);
+
+  /**
+   * Run change detection so template bindings (e.g. `<ion-nav [root]="rootPage">`)
+   * apply during this synchronous pass, before the web component runs its load
+   * lifecycle. `createComponent` only runs the creation pass, so without this the
+   * binding lands after the element has loaded, too late for `ion-nav` to read it.
+   */
+  componentRef.changeDetectorRef.detectChanges();
 
   elRefMap.set(hostElement, componentRef);
   elEventsMap.set(hostElement, unbindEvents);
